@@ -82,8 +82,14 @@ Module Impl.
   Theorem And_comm : forall x y : bool, And x y = And y x.
   Proof.
     intros.
-    simplify.
-    (* TODO: Finish *)
+    cases x.
+    - cases y.
+     + apply And_true_true.
+     + apply And_false_true.
+    - cases y.
+     + simplify.
+     equality.
+     + equality.
   Qed.
 
   (* Prove that the conjunction of a Boolean value with [true]
@@ -91,7 +97,11 @@ Module Impl.
    *)
   Theorem And_true_r : forall x : bool, And x true = x.
   Proof.
-  Admitted.
+      intros.
+      cases x.
+      - apply And_true_true.
+      - apply And_false_true.
+  Qed.
 
   (* In the second part of this assignment, we will work with a simple language
    * of imperative arithmetic programs that sequentially apply operations

@@ -19,8 +19,11 @@ Module Impl.
   (* Define [Neg] so that it implements Boolean negation, which flips
    * the truth value of a Boolean value.
    *)
-  Definition Neg (b : bool) : bool.
-  Admitted.
+  Definition Neg (b : bool) : bool :=
+      match b with
+      | true => false
+      | false => true
+      end.
 
   (* For instance, the negation of [true] should be [false].
    * This proof should follow from reducing both sides of the equation
@@ -28,7 +31,8 @@ Module Impl.
    *)
   Theorem Neg_true : Neg true = false.
   Proof.
-  Admitted.
+      equality.
+  Qed.
 
   (* Negation should be involutive, meaning that if we negate
    * any Boolean value twice, we should get the original value back.
@@ -39,32 +43,48 @@ Module Impl.
    *)
   Theorem Neg_involutive : forall b : bool, Neg (Neg b) = b.
   Proof.
-  Admitted.
+      intros.
+      cases b.
+      - simplify.
+        equality.
+      - simplify.
+        equality.
+  Qed.
 
   (* Define [And] so that it implements Boolean conjunction. That is,
    * the result value should be [true] exactly when both inputs
    * are [true].
    *)
-  Definition And (x y : bool) : bool.
-  Admitted.
+  Definition And (x y : bool) : bool :=
+      match x, y with
+      | true, true => true
+      | _,_ => false
+      end.
 
   (* Here are a couple of examples of how [And] should act on
    * concrete inputs.
    *)
   Theorem And_true_true : And true true = true.
   Proof.
-  Admitted.
+      simplify.
+      equality.
+  Qed.
 
   Theorem And_false_true : And false true = false.
   Proof.
-  Admitted.
+    simplify.
+    equality.
+  Qed.
 
   (* Prove that [And] is commutative, meaning that switching the order
    * of its arguments doesn't affect the result.
    *)
   Theorem And_comm : forall x y : bool, And x y = And y x.
   Proof.
-  Admitted.
+    intros.
+    simplify.
+    (* TODO: Finish *)
+  Qed.
 
   (* Prove that the conjunction of a Boolean value with [true]
    * doesn't change that value.

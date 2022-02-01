@@ -152,25 +152,45 @@ Module Impl.
   (* Define [numInstructions] to compute the number of instructions
    * in a program, not counting [Done] as an instruction.
    *)
-  Fixpoint numInstructions (p : Prog) : nat.
-  Admitted.
+  Fixpoint numInstructions (p : Prog) : nat :=
+  match p with
+  | Done => 0
+  | AddThen _ p => 1 + numInstructions p
+  | MulThen _ p => 1 + numInstructions p
+  | DivThen _ p => 1 + numInstructions p
+  | VidThen _ p => 1 + numInstructions p
+  | SetToThen _ p => 1 + numInstructions p
+  end.
 
   Theorem numInstructions_Example :
     numInstructions (MulThen 5 (AddThen 2 Done)) = 2.
   Proof.
-  Admitted.
+      simplify.
+      equality.
+  Qed.
 
   (* Define [concatProg] such that [concatProg p1 p2] is the program
    * that first runs [p1] and then runs [p2].
    *)
-  Fixpoint concatProg (p1 p2 : Prog) : Prog.
-  Admitted.
+  Fixpoint concatProg (p1 p2 : Prog) : Prog :=
+    match p1 with
+    | Done => p2
+    | AddThen n p   => (AddThen n (concatProg p p2))
+    | MulThen n p   => (MulThen n (concatProg p p2))
+    | DivThen n p   => (DivThen n (concatProg p p2))
+    | VidThen n p   => (VidThen n (concatProg p p2)) 
+    | SetToThen n p => (SetToThen n (concatProg p p2))  
+    end.
+
+  Compute concatProg (AddThen 1 Done) (MulThen 2 Done).
 
   Theorem concatProg_Example :
        concatProg (AddThen 1 Done) (MulThen 2 Done)
        = AddThen 1 (MulThen 2 Done).
   Proof.
-  Admitted.
+      simplify.
+      equality.
+  Qed.
 
   (* Prove that the number of instructions in the concatenation of
    * two programs is the sum of the number of instructions in each
@@ -180,7 +200,22 @@ Module Impl.
     : forall (p1 p2 : Prog), numInstructions (concatProg p1 p2)
                         = numInstructions p1 + numInstructions p2.
   Proof.
-  Admitted.
+      intros.
+      induct p1.
+      induct p2.
+      (* TODO: Way to automate this repetition? *)
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+  Qed.
 
   (* Prove that running the concatenation of [p1] with [p2] is
      equivalent to running [p1] and then running [p2] on the
@@ -190,7 +225,22 @@ Module Impl.
       run (concatProg p1 p2) initState =
       run p2 (run p1 initState).
   Proof.
-  Admitted.
+      intros.
+      induct p1.
+      induct p2.
+      (* TODO: Way to automate this repetition? *)
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+      simplify. equality.
+  Qed.
 
   (* Read this definition and understand how division by zero is handled. *)
   Fixpoint runPortable (p : Prog) (state : nat) : bool * nat :=
@@ -232,6 +282,11 @@ Module Impl.
   Lemma runPortable_run : forall p s0 s1,
     runPortable p s0 = (true, s1) -> run p s0 = s1.
   Proof.
+      intros.
+      induct p.
+      simplify. equality.
+      simplify.
+      (* TODO: Finish proof. *)
   Admitted.
 
   (* The final goal of this pset is to implement [validate : Prog -> bool]

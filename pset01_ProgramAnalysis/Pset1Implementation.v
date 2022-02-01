@@ -116,20 +116,38 @@ Module Impl.
    * that running the program [p] should result in, when the
    * initial state is [n].
    *)
-  Fixpoint run (p : Prog) (initState : nat) : nat.
-  Admitted.
+  Fixpoint run (p : Prog) (initState : nat) : nat :=
+    match p with
+    | Done => initState
+    | AddThen n p => run p (initState + n)
+    | MulThen n p => run p (initState * n)
+    | DivThen n p => run p (initState / n)
+    | VidThen n p => run p (n / initState)
+    | SetToThen n p => run p n
+    end.
+
+  Compute Done.
+
+  Compute run (AddThen 5 (AddThen 2 Done)) 12.
+
 
   Theorem run_Example1 : run Done 0 = 0.
   Proof.
-  Admitted.
+      simplify.
+      equality.
+  Qed.
 
   Theorem run_Example2 : run (MulThen 5 (AddThen 2 Done)) 1 = 7.
   Proof.
-  Admitted.
+      simplify. 
+      equality.
+  Qed.
 
   Theorem run_Example3 : run (SetToThen 3 (MulThen 2 Done)) 10 = 6.
   Proof.
-  Admitted.
+    simplify. 
+    equality.
+  Qed.
 
   (* Define [numInstructions] to compute the number of instructions
    * in a program, not counting [Done] as an instruction.

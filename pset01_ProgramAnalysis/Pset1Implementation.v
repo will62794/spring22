@@ -335,7 +335,24 @@ Module Impl.
   (* HINT 1 (see Pset1Signature.v) *)
 
   Definition validate (p : Prog) : bool.
-  Admitted.
+  
+  (* TODO: Fill in this function definition.. *)
+  Fixpoint validate' (p : Prog) : bool :=
+  match p with
+    (* The empty program can never divide by zero. *)
+    | Done => true
+    
+    (* TODO: Fill in the rest of the cases correctly. *)
+
+    (* Addition, multiplication, and assignment never divide by zero. *)
+    | AddThen n p  
+    | MulThen n p   
+    | SetToThen n p => validate' p
+    | DivThen n p   => false
+    | VidThen n p   => false 
+  end.
+
+  Compute validate goodProgram4.
 
   (* Start by making sure that your solution passes the following tests, and add
    * at least one of your own tests: *)

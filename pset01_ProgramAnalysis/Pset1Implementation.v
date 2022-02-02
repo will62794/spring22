@@ -119,8 +119,8 @@ Module Impl.
   Fixpoint run (p : Prog) (initState : nat) : nat :=
     match p with
     | Done => initState
-    | AddThen n p => run p (initState + n)
-    | MulThen n p => run p (initState * n)
+    | AddThen n p => run p (n + initState)
+    | MulThen n p => run p (n * initState)
     | DivThen n p => run p (initState / n)
     | VidThen n p => run p (n / initState)
     | SetToThen n p => run p n
@@ -243,6 +243,10 @@ Module Impl.
   Qed.
 
   (* Read this definition and understand how division by zero is handled. *)
+  
+  (* If we try to divide by zero at any time during the program execution we
+     terminate the program execution, returning the current state at that point
+     and boolean value of 'false', to indicate a division by zero error occurred. *)
   Fixpoint runPortable (p : Prog) (state : nat) : bool * nat :=
     match p with
     | Done => (true, state)
@@ -285,9 +289,16 @@ Module Impl.
       intros.
       induct p.
       simplify. equality.
-      simplify.
-      (* TODO: Finish proof. *)
-  Admitted.
+      simplify. apply IHp. equality.
+      simplify. apply IHp. equality.
+      simplify. cases n. 
+      simplify. equality.
+      simplify. apply IHp. equality.
+      simplify. cases s0. 
+      simplify. equality.
+      simplify. apply IHp. equality.
+      simplify. apply IHp. equality.
+  Qed.
 
   (* The final goal of this pset is to implement [validate : Prog -> bool]
      such that if this function returns [true], the program would not trigger

@@ -337,25 +337,24 @@ Module Impl.
 
   (* Data type representing an abstract program state. *)
   Inductive AbstractState := 
-    | Zero
-    | Positive
-    | ZeroOrPositive
-    | DivByZero.
+    | Zero              (* {0} *)
+    | Positive          (* {1,2,3...} *)
+    | ZeroOrPositive    (* {0,1,2,3...} *)
+    | DivByZero.        (* special constructor for marking that a program may divide by zero. *)
 
   (* 
     To check whether a given program may divide by zero, for any possible
-    initial state, we can examine an abstraction of the states of the program at
-    any point in its evaluation. 
-
-    Specifically, we care about whether the current state is 'strictly positive'
-    or not i.e. whether it may be zero or not. By propagating this information
-    through as a 'symbolic execution' pass, we can check whether we ever
-    encounter a 'VidThen' instruction when the current state may possibly be
-    zero. Additionally, we also check for the simpler case of encountering a
-    'DivThen 0 p' instruction, which means that a program always has the
-    potential to divide by zero.  
+    initial state, we perform a basic form of symbolic execution.
+    
+    Specifically, we consider an abstraction of a concrete program state (a
+    natural number) and only consider whether it is zero or nonzero, since this
+    is the information needed to determine whether a divide by zero may occur.
+    By propagating this information through via a symbolic execution, we can
+    check whether we ever encounter a 'VidThen' instruction when the current
+    state may possibly be zero. Additionally, we also check for the simpler case
+    of encountering a 'DivThen 0 p' instruction, which means that a program
+    always has the potential to divide by zero.  
   *)
-  (* TODO: Change the abstraction to simply be 'isZero'? *)
   Fixpoint symbolicEval (p : Prog) (absState : AbstractState) : AbstractState :=
     match p with
       | Done => absState
@@ -369,8 +368,8 @@ Module Impl.
       | MulThen n p  => 
         match absState with
         | Zero => (symbolicEval p Zero) (* zero times anything is zero. *)   
-        | Positive => (symbolicEval p Positive)
-        | ZeroOrPositive => (symbolicEval p (if n ==n 0 then ZeroOrPositive else Positive)) 
+        | Positive => (symbolicEval p (if n ==n 0 then Zero else Positive)) (* anything times zero is zero. *)
+        | ZeroOrPositive => (symbolicEval p (if n ==n 0 then Zero else Positive)) (* anything times zero is zero. *)
         | DivByZero => DivByZero
         end        
       | SetToThen n p => (symbolicEval p (if n ==n 0 then Zero else Positive))
@@ -386,7 +385,16 @@ Module Impl.
         end     
     end.
 
-  Definition validate (p : Prog) : bool.
+  Definition validate (p : Prog) : bool := 
+    (* Programs always start with some unknown natural number, 
+       so the abstract initial state is always zero or positive. *)
+    let res := (symbolicEval p ZeroOrPositive) in
+    match res with
+        | Zero 
+        | ZeroOrPositive 
+        | Positive => true
+        | DivByZero => false
+    end.
   
   (* TODO: Fill in this function definition.. *)
   (* Fixpoint validate' (p : Prog) : bool :=
@@ -394,32 +402,36 @@ Module Impl.
 
   Definition myProgram1 := AddThen 0 (AddThen 0 Done).
 
-  Compute symbolicEval myProgram1 ZeroOrPositive.
-  Compute symbolicEval goodProgram2 ZeroOrPositive.
-  Compute symbolicEval goodProgram3 ZeroOrPositive.
-  Compute symbolicEval goodProgram4 ZeroOrPositive.
-  Compute symbolicEval goodProgram5 ZeroOrPositive.
-  Compute symbolicEval badProgram1 ZeroOrPositive.
-  Compute symbolicEval badProgram2 ZeroOrPositive.
+  Compute validate myProgram1.
+  Compute validate goodProgram2.
+  Compute validate goodProgram3.
+  Compute validate goodProgram4.
+  Compute validate goodProgram5.
+  Compute validate badProgram1. 
+  Compute validate badProgram2.
 
   (* Start by making sure that your solution passes the following tests, and add
    * at least one of your own tests: *)
 
-  Example validate1 : validate goodProgram1 = true. Admitted.
-  Example validate2 : validate goodProgram2 = true. Admitted.
-  Example validate3 : validate goodProgram3 = true. Admitted.
-  Example validate4 : validate goodProgram4 = true. Admitted.
-  Example validate5 : validate goodProgram5 = true. Admitted.
-  Example validate6 : validate goodProgram6 = true. Admitted.
-  Example validate7 : validate goodProgram7 = true. Admitted.
-  Example validateb1 : validate badProgram1 = false. Admitted.
-  Example validateb2 : validate badProgram2 = false. Admitted.
+  Example validate1 : validate goodProgram1 = true. Proof. equality. Qed.
+  Example validate2 : validate goodProgram2 = true. Proof. equality. Qed.
+  Example validate3 : validate goodProgram3 = true. Proof. equality. Qed.
+  Example validate4 : validate goodProgram4 = true. Proof. equality. Qed.
+  Example validate5 : validate goodProgram5 = true. Proof. equality. Qed.
+  Example validate6 : validate goodProgram6 = true. Proof. equality. Qed.
+  Example validate7 : validate goodProgram7 = true. Proof. equality. Qed.
+  Example validateb1 : validate badProgram1 = false. Proof. equality. Qed.
+  Example validateb2 : validate badProgram2 = false. Proof. equality. Qed.
 
   (* Then, add your own example of a bad program here, and check that `validate`
    * returns `false` on it: *)
 
-  Definition badProgram3 : Prog. Admitted.
-  Example validateb3 : validate badProgram3 = false. Admitted.
+  Definition badProgram3 : Prog := AddThen 1 (VidThen 10 (MulThen 0 (VidThen 10 Done))).
+  Definition badProgram4 : Prog := SetToThen 0 ((MulThen 0 (VidThen 10 Done))).
+  Compute validate badProgram3.
+  Compute validate badProgram4.
+  Example validateb3 : validate badProgram3 = false. Proof. equality. Qed.
+  Example validateb4 : validate badProgram4 = false. Proof. equality. Qed.
 
   (* HINTs 2-6 (see Pset1Signature.v)  *)
 

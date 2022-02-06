@@ -557,6 +557,13 @@ Qed.
     - simplify. equality.
   Qed.
 
+  Lemma tup_eq : 
+    forall s, forall p, (runPortable p s) = (fst (runPortable p s), snd (runPortable p s)).
+    simplify.
+    cases (runPortable p s).
+    f_equal.
+  Qed.
+
   (* If validate returns true, then runPortable should return true. *)
   Lemma validate_sound_bool : forall p, validate p = true ->
     forall s, fst (runPortable p s) = true.
@@ -564,11 +571,35 @@ Qed.
     apply symbolicEval_sound. equality.
   Qed.
 
+  Lemma validate_sound_result : forall p, validate p = true ->
+    forall s, snd (runPortable p s) = (run p s).
+    simplify.
+    cases (runPortable p s).
+    simplify.
+    cases b.
+    - symmetry.
+      apply runPortable_run. equality.
+    (* - rewrite tup_eq in Heq. f_equal.  *)
+    (* apply validate_sound_bool in H. *)
+    (* rewrite tup_eq in Heq. *)
+    (* rewrite validate_sound_bool in Heq. *)
+    (* apply symbolicEval_implies_validate in H. *)
+    (* apply symbolicEval_sound. equality. *)
+  Admitted.
+
+  (* runPortable_run *)
+
   Lemma validate_sound : forall p, validate p = true ->
     forall s, runPortable p s = (true, run p s).
     simplify.
     cases (runPortable p s).
-    f_equal.
+    rewrite tup_eq in Heq.
+    rewrite validate_sound_result in Heq.
+    rewrite validate_sound_bool in Heq. 
+    symmetry.
+    equality.
+    equality.
+    equality.
   Qed.
 
   (* Here is the complete list of commands used in one possible solution:

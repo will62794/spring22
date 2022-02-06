@@ -443,9 +443,61 @@ Module Impl.
    * proceeding. *)
 
   (** Proof sketch: **)
-  (* [[Fill in your proof sketch here.]] *)
+  (* 
+  
+  Our goal is to prove that, if our validate function returns true, then
+  'runPortable' will run without a divide by zero error, and its output will be
+  equivalent to the output of running the standard 'run' function on the given
+  program. This consists of two main parts. That is, we (1) first want to prove
+  that runPortable will run without encountering a divide by zero error, and we
+  (2) also want to prove that the result is equivalent to 'run'.
+
+  To show (1), we prove that if (symbolicEval p) returns without a DivByZero
+  erro, then 'runPortable p s' must return true, for all possible input values
+  's'. We can prove this inductively on the program 'p', by showing that, at
+  each instruction of the program, if symbolicEval returns true, then
+  runPortable mustn't divide by zero. Additionally, we may need an auxiliary
+  lemma that says that each 'step' of symbolicEval must always return true (not
+  divide by zero) if the overall function returns true.
+  *)
 
   (* Now you're ready to write the proof in Coq: *)
+
+  Lemma symbolicEval_pos : 
+    forall p, (symbolicEval p ZeroOrPositive) <> DivByZero -> 
+                ((symbolicEval p Positive) <> DivByZero).
+    simplify.
+    induct p.
+    simplify. equality.
+    simplify. 
+    cases n. 
+    simplify. apply IHp. apply H.
+    simplify. equality.
+    simplify. cases n.
+    simplify. equality.
+    simplify. equality.
+    simplify. cases n.
+    simplify. equality.
+    simplify. equality.
+    simplify. equality.
+    simplify. cases n.
+    simplify. equality.
+    simplify. equality.
+  Qed.
+
+  (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
+  Lemma symbolicEval_sound : 
+    forall p, (symbolicEval p ZeroOrPositive <> DivByZero) ->
+        forall s, fst (runPortable p s) = true.
+    simplify.
+    induct p.
+    simplify. equality.
+    simplify. 
+    cases n. 
+    simplify. apply IHp, H.
+    simplify. apply IHp.
+  Admitted.
+
 
   Lemma validate_sound : forall p, validate p = true ->
     forall s, runPortable p s = (true, run p s).

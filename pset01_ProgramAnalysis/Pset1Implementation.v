@@ -359,23 +359,9 @@ Module Impl.
     match p with
       | Done => absState
       | AddThen n p  => symbolicEval p (if n ==n 0 then absState else Positive)
-        (* match absState with
-        | Zero => (symbolicEval p (if n ==n 0 then Zero else Positive))  (* zero plus anything is positive. *)
-        | Positive => (symbolicEval p Positive)
-        | ZeroOrPositive => (symbolicEval p (if n ==n 0 then ZeroOrPositive else Positive)) 
-        | DivByZero => DivByZero
-        end *)
       | MulThen n p  => symbolicEval p (if n ==n 0 then Zero else absState)
-        (* match absState with
-        | Zero => (symbolicEval p Zero) (* zero times anything is zero. *)   
-        | Positive => (symbolicEval p (if n ==n 0 then Zero else Positive)) (* anything times zero is zero. *)
-        | ZeroOrPositive => (symbolicEval p (if n ==n 0 then Zero else Positive)) (* anything times zero is zero. *)
-        | DivByZero => DivByZero
-        end         *)
-      | DivThen n p   => 
-            if n ==n 0 then DivByZero else (symbolicEval p absState)
-            (* dividing by something nonzero doesn't change positivity of abstract state. *)
-      | VidThen n p   => 
+      | DivThen n p  => if n ==n 0 then DivByZero else (symbolicEval p absState)
+      | VidThen n p  => 
         match absState with
         | Zero 
         | ZeroOrPositive  

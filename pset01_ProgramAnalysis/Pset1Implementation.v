@@ -334,25 +334,73 @@ Module Impl.
 
   (* HINT 1 (see Pset1Signature.v) *)
 
+
+  (* Data type representing an abstract program state. *)
+  Inductive AbstractState := 
+    | Zero
+    | Positive
+    | ZeroOrPositive
+    | DivByZero.
+
+  (* 
+    To check whether a given program may divide by zero, for any possible
+    initial state, we can examine an abstraction of the states of the program at
+    any point in its evaluation. 
+
+    Specifically, we care about whether the current state is 'strictly positive'
+    or not i.e. whether it may be zero or not. By propagating this information
+    through as a 'symbolic execution' pass, we can check whether we ever
+    encounter a 'VidThen' instruction when the current state may possibly be
+    zero. Additionally, we also check for the simpler case of encountering a
+    'DivThen 0 p' instruction, which means that a program always has the
+    potential to divide by zero.  
+  *)
+  (* TODO: Change the abstraction to simply be 'isZero'? *)
+  Fixpoint symbolicEval (p : Prog) (absState : AbstractState) : AbstractState :=
+    match p with
+      | Done => absState
+      | AddThen n p  => 
+        match absState with
+        | Zero => (symbolicEval p (if n ==n 0 then Zero else Positive))  (* zero plus anything is positive. *)
+        | Positive => (symbolicEval p Positive)
+        | ZeroOrPositive => (symbolicEval p (if n ==n 0 then ZeroOrPositive else Positive)) 
+        | DivByZero => DivByZero
+        end
+      | MulThen n p  => 
+        match absState with
+        | Zero => (symbolicEval p Zero) (* zero times anything is zero. *)   
+        | Positive => (symbolicEval p Positive)
+        | ZeroOrPositive => (symbolicEval p (if n ==n 0 then ZeroOrPositive else Positive)) 
+        | DivByZero => DivByZero
+        end        
+      | SetToThen n p => (symbolicEval p (if n ==n 0 then Zero else Positive))
+      | DivThen n p   => 
+            if n ==n 0 then DivByZero 
+            else (symbolicEval p absState) (* dividing by something nonzero doesn't change positivity of abstract state. *)
+      | VidThen n p   => 
+        match absState with
+        | Zero 
+        | ZeroOrPositive => DivByZero (* state is potentially zero means we hit a divide by zero error. *)  
+        | Positive => (symbolicEval p absState) (* dividing by something nonzero doesn't change positivity of abstract state. *)
+        | DivByZero => DivByZero
+        end     
+    end.
+
   Definition validate (p : Prog) : bool.
   
   (* TODO: Fill in this function definition.. *)
-  Fixpoint validate' (p : Prog) : bool :=
-  match p with
-    (* The empty program can never divide by zero. *)
-    | Done => true
-    
-    (* TODO: Fill in the rest of the cases correctly. *)
+  (* Fixpoint validate' (p : Prog) : bool :=
+  end. *)
 
-    (* Addition, multiplication, and assignment never divide by zero. *)
-    | AddThen n p  
-    | MulThen n p   
-    | SetToThen n p => validate' p
-    | DivThen n p   => false
-    | VidThen n p   => false 
-  end.
+  Definition myProgram1 := AddThen 0 (AddThen 0 Done).
 
-  Compute validate goodProgram4.
+  Compute symbolicEval myProgram1 ZeroOrPositive.
+  Compute symbolicEval goodProgram2 ZeroOrPositive.
+  Compute symbolicEval goodProgram3 ZeroOrPositive.
+  Compute symbolicEval goodProgram4 ZeroOrPositive.
+  Compute symbolicEval goodProgram5 ZeroOrPositive.
+  Compute symbolicEval badProgram1 ZeroOrPositive.
+  Compute symbolicEval badProgram2 ZeroOrPositive.
 
   (* Start by making sure that your solution passes the following tests, and add
    * at least one of your own tests: *)

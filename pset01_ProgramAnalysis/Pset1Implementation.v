@@ -358,31 +358,31 @@ Module Impl.
   Fixpoint symbolicEval (p : Prog) (absState : AbstractState) : AbstractState :=
     match p with
       | Done => absState
-      | AddThen n p  => 
-        match absState with
+      | AddThen n p  => symbolicEval p (if n ==n 0 then absState else Positive)
+        (* match absState with
         | Zero => (symbolicEval p (if n ==n 0 then Zero else Positive))  (* zero plus anything is positive. *)
         | Positive => (symbolicEval p Positive)
         | ZeroOrPositive => (symbolicEval p (if n ==n 0 then ZeroOrPositive else Positive)) 
         | DivByZero => DivByZero
-        end
-      | MulThen n p  => 
-        match absState with
+        end *)
+      | MulThen n p  => symbolicEval p (if n ==n 0 then Zero else absState)
+        (* match absState with
         | Zero => (symbolicEval p Zero) (* zero times anything is zero. *)   
         | Positive => (symbolicEval p (if n ==n 0 then Zero else Positive)) (* anything times zero is zero. *)
         | ZeroOrPositive => (symbolicEval p (if n ==n 0 then Zero else Positive)) (* anything times zero is zero. *)
         | DivByZero => DivByZero
-        end        
-      | SetToThen n p => (symbolicEval p (if n ==n 0 then Zero else Positive))
+        end         *)
       | DivThen n p   => 
-            if n ==n 0 then DivByZero 
-            else (symbolicEval p absState) (* dividing by something nonzero doesn't change positivity of abstract state. *)
+            if n ==n 0 then DivByZero else (symbolicEval p absState)
+            (* dividing by something nonzero doesn't change positivity of abstract state. *)
       | VidThen n p   => 
         match absState with
         | Zero 
-        | ZeroOrPositive => DivByZero (* state is potentially zero means we hit a divide by zero error. *)  
+        | ZeroOrPositive  
+        | DivByZero => DivByZero (* state is potentially zero means we hit a divide by zero error. *) 
         | Positive => (symbolicEval p absState) (* dividing by something nonzero doesn't change positivity of abstract state. *)
-        | DivByZero => DivByZero
-        end     
+        end    
+      | SetToThen n p => symbolicEval p (if n ==n 0 then Zero else Positive)
     end.
 
   Definition validate (p : Prog) : bool := 
@@ -448,17 +448,28 @@ Module Impl.
   Our goal is to prove that, if our validate function returns true, then
   'runPortable' will run without a divide by zero error, and its output will be
   equivalent to the output of running the standard 'run' function on the given
-  program. This consists of two main parts. That is, we (1) first want to prove
-  that runPortable will run without encountering a divide by zero error, and we
-  (2) also want to prove that the result is equivalent to 'run'.
+  program. This consists of two main subgoals. That is, we want to prove that
+  if validate returns true, then
+    (1) 'runPortable' runs without a divide by zero error.
+    (2) 'runPortable' returns the same result as 'run'
 
-  To show (1), we prove that if (symbolicEval p) returns without a DivByZero
-  erro, then 'runPortable p s' must return true, for all possible input values
-  's'. We can prove this inductively on the program 'p', by showing that, at
-  each instruction of the program, if symbolicEval returns true, then
-  runPortable mustn't divide by zero. Additionally, we may need an auxiliary
-  lemma that says that each 'step' of symbolicEval must always return true (not
-  divide by zero) if the overall function returns true.
+  Proving (1) is our main task, since, once that is proved, we can use the
+  previously established lemma 'runPortable_run' ensures that if 'runPortable'
+  returns true, then its output is equivalent to 'run'. To prove (1), we focus
+  on establishing a main lemma, which proves a property of the auxiliary
+  function 'symbolicEval', which we state as 'symbolicEval_sound'. Basically, we
+  need to show that if 'symbolicEval p astate' does NOT return a DivByZero
+  result, then 'runPortable p s' should return true, for any given input s. We
+  can do this by induction on the program 'p'. That is, we essentially need to
+  show that, if the property holds up to the current program 'p', then it
+  will hold after any evaluation step that precedes 'p' i.e.
+    assume holds for 'p',
+    show holds for 
+        - (AddThen n p)
+        - (MulThen n p)
+        - (DivThen n p)
+        - (VidThen n p)
+        - (SetToThen n p)
   *)
 
   (* Now you're ready to write the proof in Coq: *)
@@ -485,6 +496,28 @@ Module Impl.
     simplify. equality.
   Qed.
 
+  Lemma symbolicEval_zero : 
+  forall p, (symbolicEval p Zero) <> DivByZero -> 
+              (symbolicEval p ZeroOrPositive) <> DivByZero.
+  simplify.
+  induct p.
+  simplify. equality.
+  simplify. 
+  cases n. 
+  simplify. apply IHp. apply H.
+  simplify. equality.
+  simplify. cases n.
+  simplify. equality.
+  simplify. equality.
+  simplify. cases n.
+  simplify. equality.
+  simplify. equality.
+  simplify. equality.
+  simplify. cases n.
+  simplify. equality.
+  simplify. equality.
+Qed.
+
   (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
   Lemma symbolicEval_sound : 
     forall p, (symbolicEval p ZeroOrPositive <> DivByZero) ->
@@ -493,15 +526,50 @@ Module Impl.
     induct p.
     simplify. equality.
     simplify. 
-    cases n. 
-    simplify. apply IHp, H.
-    simplify. apply IHp.
+    - cases n. 
+        + simplify. equality.
+        + simplify. simplify. admit.
+    - cases n.
+        + simplify. apply symbolicEval_zero in H. equality.
+        + simplify. equality.
+    - cases n.
+        + simplify. equality.
+        + simplify. equality.
+    - cases n.
+        + simplify. equality.
+        + simplify. equality.
+    - cases n.
+        + simplify.  apply symbolicEval_zero in H. equality.
+        + simplify. admit.
   Admitted.
 
+  (* symbolicEval does not return a DivByZero error, iff 'validate'
+     returns true. *)
+  Lemma symbolicEval_implies_validate : 
+    forall p, (symbolicEval p ZeroOrPositive <> DivByZero) <->
+              (validate p) = true.
+    simplify.
+    unfold validate.
+    cases (symbolicEval p ZeroOrPositive).
+    - simplify. equality. 
+    - simplify. equality.
+    - simplify. equality.
+    - simplify. equality.
+  Qed.
+
+  (* If validate returns true, then runPortable should return true. *)
+  Lemma validate_sound_bool : forall p, validate p = true ->
+    forall s, fst (runPortable p s) = true.
+    simplify. apply symbolicEval_implies_validate in H.
+    apply symbolicEval_sound. equality.
+  Qed.
 
   Lemma validate_sound : forall p, validate p = true ->
     forall s, runPortable p s = (true, run p s).
-  Admitted.
+    simplify.
+    cases (runPortable p s).
+    f_equal.
+  Qed.
 
   (* Here is the complete list of commands used in one possible solution:
     - Search, for example Search (_ + 0).

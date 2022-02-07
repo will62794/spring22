@@ -339,7 +339,7 @@ Module Impl.
   Inductive AbstractState := 
     | Zero              (* {0} *)
     | Positive          (* {1,2,3...} *)
-    (*| ZeroOrPositive    (* {0,1,2,3...} *)*)
+    | ZeroOrPositive    (* {0,1,2,3...}*)
     | DivByZero.        (* special constructor for marking that a program may divide by zero. *)
 
   (* 
@@ -367,11 +367,12 @@ Module Impl.
       | VidThen n p  => (* n / state *)
         match absState with
         | Zero 
+        | ZeroOrPositive
         | DivByZero => DivByZero (* state is zero means we hit a divide by zero error. *) 
-        (* Be conservative here. Dividing when n < state produces a Zero, but we can't
-           know that detail with this level of abstraction, so we err on the safe side,
-           (i.e. shoot for soundness but not completeness) *)
-        | Positive => (symbolicEval p Zero)
+        (* Dividing by exactly 1 doesn't change the abstract program state, but dividing
+        by any other positive natural may produce a zero value, if state < n, so we conservatively
+        update the abstract state to Zero in that case. *)
+        | Positive => (symbolicEval p (if n ==n 1 then absState else Zero))
         end
         (* absState) dividing by something nonzero doesn't change positivity of abstract state. *)
       | SetToThen n p => symbolicEval p (if n ==n 0 then Zero else Positive)
@@ -380,13 +381,12 @@ Module Impl.
   Definition validate (p : Prog) : bool := 
     (* Programs always start with some unknown natural number, 
        so the abstract initial state is always zero or positive. *)
-    let zres := (symbolicEval p Zero) in
-    let pres := (symbolicEval p Positive) in
-    match (zres,pres) with
-        | (_, DivByZero) => false
-        | (DivByZero, _) => false
-        | (_, _) => true
-    end. 
+    match (symbolicEval p ZeroOrPositive) with
+        | Zero
+        | Positive
+        | ZeroOrPositive => true
+        | DivByZero => false
+    end.
   
   (* TODO: Fill in this function definition.. *)
   (* Fixpoint validate' (p : Prog) : bool :=
@@ -421,12 +421,14 @@ Module Impl.
   Definition badProgram3 : Prog := AddThen 1 (VidThen 10 (MulThen 0 (VidThen 10 Done))).
   Definition badProgram4 : Prog := SetToThen 0 ((MulThen 0 (VidThen 10 Done))).
   Definition badProgram5 : Prog := AddThen 1 (VidThen 0 (MulThen 0 (VidThen 10 Done))).
+  Definition badProgram6 : Prog := AddThen 1 (DivThen 3 (VidThen 1 Done)).
+  Definition goodProgram6a : Prog := AddThen 1 (DivThen 1 (VidThen 1 Done)).
 
-  Compute validate badProgram3.
-  Compute validate badProgram4.
   Example validateb3 : validate badProgram3 = false. Proof. equality. Qed.
   Example validateb4 : validate badProgram4 = false. Proof. equality. Qed.
   Example validateb5 : validate badProgram5 = false. Proof. equality. Qed.
+  Example validateb6 : validate badProgram6 = false. Proof. equality. Qed.
+  Example validateb6a : validate goodProgram6a = true. Proof. equality. Qed.
 
   (* HINTs 2-6 (see Pset1Signature.v)  *)
 

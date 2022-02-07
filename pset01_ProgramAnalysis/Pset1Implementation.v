@@ -560,10 +560,6 @@ Qed.
         
   Admitted. 
   
-
-
-
-
     (* Division of two positive natural numbers is positive.  *)
     Lemma pos_div_is_pos :
         forall n, forall m, m <= n -> ((S n) / (S m)) > 0.
@@ -577,78 +573,7 @@ Qed.
     simplify. 
     apply Nat.div_str_pos. split.
     linear_arithmetic. linear_arithmetic.
-Admitted.
-
-    (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
-    Lemma symbolicEval_all_input : 
-        forall p, 
-            ((symbolicEval p Zero <> DivByZero) -> fst (runPortable p 0) = true) /\  
-            ((symbolicEval p Positive <> DivByZero) -> forall s, fst (runPortable p (S s)) = true).
-        simplify.
-        induct p.
-        - split. simplify. equality. simplify. equality.
-        - split. destruct IHp. 
-            + simplify. cases n.
-                * simplify. equality.
-                * simplify. equality.
-            + simplify. cases n.
-                * simplify. equality.
-                * simplify. equality.
-        - split. destruct IHp.
-            + simplify. cases n.
-                * simplify. equality. 
-                * simplify. rewrite Nat.mul_0_r. equality.
-            + destruct IHp. simplify. cases n.
-                * rewrite Nat.mul_comm. rewrite Nat.mul_0_r. equality.
-                * simplify. equality.
-        - split. destruct IHp.
-            + simplify. cases (n ==n 0).
-                * simplify. equality.
-                * cases (n ==n 1). simplify. rewrite Nat.div_0_l. 
-                  equality. equality.
-                  rewrite Nat.div_0_l. equality. equality.
-            + destruct IHp. simplify. cases (n ==n 0).
-                * simplify. equality.
-                * cases (n ==n 1). simplify. Search (_ / 1). rewrite e. rewrite Nat.div_1_r. equality. 
-                  cases (S s / n).
-                  equality. admit.
-
-                (* equality. equality. *)
-                    (* rewrite Nat.div_0_l. equality. equality. *)
-                (* admit. need to show division of two positives is also positive *)
-        - split. destruct IHp.
-            + simplify. equality.
-            + simplify. destruct IHp. cases n.
-                * rewrite Nat.div_0_l. simplify. equality. equality.
-                * simplify. apply pos_div_is_pos.  admit. (* need to show division of two positives is also positive *)
-        - split. destruct IHp.
-            + simplify. cases n.
-                * simplify. equality.
-                * simplify. equality.
-            + simplify. cases n.
-                * simplify. equality.
-                * simplify. equality.
     Admitted.
-
-    Compute 111/10.
-    (* - simplify. equality.
-    - simplify. 
-      cases n. 
-        + simplify. equality.
-        + simplify. apply symbolicEval_sound_strictpos. equality.  
-    - cases n.
-        + simplify. apply symbolicEval_zero in H. equality.
-        + simplify. equality.
-    - cases n.
-        + simplify. equality.
-        + simplify. equality.
-    - cases n.
-        + simplify. equality.
-        + simplify. equality.
-    - cases n.
-        + simplify.  apply symbolicEval_zero in H. equality.
-        + simplify. apply symbolicEval_sound_strictpos. equality. *)
-  (* Admitted. *)
 
   Lemma symbolicEval_pos_input : 
         forall p, (symbolicEval p Positive <> DivByZero) -> 
@@ -670,67 +595,43 @@ Admitted.
 
   Admitted.
 
-  (* Lemma symbolicEval_all : 
-  forall p, 
-    (And 
-        (symbolicEval p Zero <> DivByZero) -> forall s, fst (runPortable p s) = true
-    (symbolicEval p Positive <> DivByZero) ->
-    (symbolicEval p DivByZero <> DivByZero) -> 
-    forall s, fst (runPortable p s) = true.
-    simplify.
-    induct p.
-    - simplify. equality.
-    - simplify. cases n.
-        + simplify. equality.
-        + simplify. equality.
-    - simplify. cases n.
-        + simplify.
-Admitted. *)
 
   Lemma symbolicEval_divbyzero_input : 
   forall p, (symbolicEval p DivByZero <> DivByZero) -> 
       forall s, fst (runPortable p s) = true.
   Admitted.
 
+  (* KEY SOUNDNESS LEMMA. *)
   (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
   Lemma symbolicEval_sound : 
-    forall p, forall a, (symbolicEval p a <> DivByZero) ->
+    forall p, (symbolicEval p ZeroOrPositive <> DivByZero) ->
         forall s, fst (runPortable p s) = true.
         simplify.
-        cases a.
-            - apply symbolicEval_zero_input. equality.
-            - apply symbolicEval_pos_input. equality.
-            - apply symbolicEval_divbyzero_input. equality.
-    Qed.
-
-
-
-
-
-
-
-
-
-    (* simplify.
-    induct p.
-    - simplify. equality.
-    - simplify. 
-      cases n. 
-        + simplify. equality.
-        + simplify. apply symbolicEval_sound_strictpos. equality.  
-    - cases n.
-        + simplify. apply symbolicEval_zero in H. equality.
-        + simplify. equality.
-    - cases n.
-        + simplify. equality.
-        + simplify. equality.
-    - cases n.
-        + simplify. equality.
-        + simplify. equality.
-    - cases n.
-        + simplify.  apply symbolicEval_zero in H. equality.
-        + simplify. apply symbolicEval_sound_strictpos. equality.
-  Qed. *)
+        induct p.
+        (* Done *)
+        - simplify. equality.
+        (* AddThen n p *)
+        - simplify. cases n.
+            + simplify. equality.
+            + simplify. admit.
+        (* MulThen n p*)
+        - simplify. cases n.
+            + simplify. admit.
+            + simplify. equality. 
+        (* DivThen n p*)
+        - simplify. cases (n ==n 0).
+            + simplify. equality.
+            + cases (n ==n 1).
+                * simplify. equality.
+                * simplify. admit.
+        (* VidThen n p*)
+        - simplify. admit.
+            (* + simplify. *)
+        (* SetToThen n p*)
+        - simplify. cases n.
+            + simplify. admit.
+            + simplify. admit. 
+    Admitted.
 
   (* symbolicEval does not return a DivByZero error, iff 'validate'
      returns true. *)

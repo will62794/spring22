@@ -360,13 +360,19 @@ Module Impl.
       | Done => absState
       | AddThen n p  => symbolicEval p (if n ==n 0 then absState else Positive)
       | MulThen n p  => symbolicEval p (if n ==n 0 then Zero else absState)
-      | DivThen n p  => if n ==n 0 then DivByZero else (symbolicEval p absState)
+      | DivThen n p  => 
+            if n ==n 0 then DivByZero else
+            (* p/1 won't change the abstract state for any value p. *)
+            (symbolicEval p (if n ==n 1 then absState else Zero))
       | VidThen n p  => 
         match absState with
         | Zero 
         | DivByZero => DivByZero (* state is zero means we hit a divide by zero error. *) 
-        | Positive => (symbolicEval p absState) (* dividing by something nonzero doesn't change positivity of abstract state. *)
-        end    
+        (* in p/q division, if p < q then output is zero. *)
+        (* | Positive => (symbolicEval p (if n ==n 0 then Zero else Positive)) *)
+        | Positive => (symbolicEval p Zero)
+        end
+        (* absState) dividing by something nonzero doesn't change positivity of abstract state. *)
       | SetToThen n p => symbolicEval p (if n ==n 0 then Zero else Positive)
     end.
 
@@ -413,10 +419,13 @@ Module Impl.
 
   Definition badProgram3 : Prog := AddThen 1 (VidThen 10 (MulThen 0 (VidThen 10 Done))).
   Definition badProgram4 : Prog := SetToThen 0 ((MulThen 0 (VidThen 10 Done))).
+  Definition badProgram5 : Prog := AddThen 1 (VidThen 0 (MulThen 0 (VidThen 10 Done))).
+
   Compute validate badProgram3.
   Compute validate badProgram4.
   Example validateb3 : validate badProgram3 = false. Proof. equality. Qed.
   Example validateb4 : validate badProgram4 = false. Proof. equality. Qed.
+  Example validateb5 : validate badProgram5 = false. Proof. equality. Qed.
 
   (* HINTs 2-6 (see Pset1Signature.v)  *)
 
@@ -552,17 +561,70 @@ Qed.
 
 
 
+    (* Division of two positive natural numbers is positive.  *)
+    Lemma pos_div_is_pos :
+        forall n, forall m, m <= n -> ((S n) / (S m)) > 0.
+        simplify. 
+        apply Nat.div_str_pos_iff. split.
+        linear_arithmetic. linear_arithmetic.
+    Qed.
 
-
-
+    Lemma pos_div_is_posb :
+    forall n, forall m, m >= n -> ((S n) / (S m)) > 0.
+    simplify. 
+    apply Nat.div_str_pos. split.
+    linear_arithmetic. linear_arithmetic.
+Admitted.
 
     (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
-    Lemma symbolicEval_zero_input : 
-    forall p, (symbolicEval p Zero <> DivByZero) -> forall s, fst (runPortable p s) = true.
-    simplify.
-    induct p.
+    Lemma symbolicEval_all_input : 
+        forall p, 
+            ((symbolicEval p Zero <> DivByZero) -> fst (runPortable p 0) = true) /\  
+            ((symbolicEval p Positive <> DivByZero) -> forall s, fst (runPortable p (S s)) = true).
+        simplify.
+        induct p.
+        - split. simplify. equality. simplify. equality.
+        - split. destruct IHp. 
+            + simplify. cases n.
+                * simplify. equality.
+                * simplify. equality.
+            + simplify. cases n.
+                * simplify. equality.
+                * simplify. equality.
+        - split. destruct IHp.
+            + simplify. cases n.
+                * simplify. equality. 
+                * simplify. rewrite Nat.mul_0_r. equality.
+            + destruct IHp. simplify. cases n.
+                * rewrite Nat.mul_comm. rewrite Nat.mul_0_r. equality.
+                * simplify. equality.
+        - split. destruct IHp.
+            + simplify. cases (n ==n 0).
+                * simplify. equality.
+                * cases (n ==n 1). simplify. rewrite Nat.div_0_l. 
+                  equality. equality.
+                  rewrite Nat.div_0_l. equality. equality.
+            + destruct IHp. simplify. cases (n ==n 0).
+                * simplify. equality.
+                * cases (n ==n 1). simplify. Search (_ / 1). rewrite e. rewrite Nat.div_1_r. equality. 
+                  equality. equality.
+                    rewrite Nat.div_0_l. equality. equality.
+                admit. (* need to show division of two positives is also positive *)
+        - split. destruct IHp.
+            + simplify. equality.
+            + simplify. destruct IHp. cases n.
+                * rewrite Nat.div_0_l. simplify. equality. equality.
+                * simplify. apply pos_div_is_pos.  admit. (* need to show division of two positives is also positive *)
+        - split. destruct IHp.
+            + simplify. cases n.
+                * simplify. equality.
+                * simplify. equality.
+            + simplify. cases n.
+                * simplify. equality.
+                * simplify. equality.
     Admitted.
 
+    Compute 111/10.
     (* - simplify. equality.
     - simplify. 
       cases n. 
@@ -583,9 +645,41 @@ Qed.
   (* Admitted. *)
 
   Lemma symbolicEval_pos_input : 
-    forall p, (symbolicEval p Positive <> DivByZero) -> 
+        forall p, (symbolicEval p Positive <> DivByZero) -> 
         forall s, fst (runPortable p s) = true.
+        simplify.
+        induct p.
+        - simplify. equality.
+        - simplify. cases n.
+            + simplify. equality.
+            + simplify. equality.
+        - simplify. cases n.
+            + simplify. admit.
+            + simplify. equality.
+        - simplify. cases n.
+            + simplify. equality.
+            + simplify. equality.
+        - simplify.
+            + simplify. equality.
+
   Admitted.
+
+  (* Lemma symbolicEval_all : 
+  forall p, 
+    (And 
+        (symbolicEval p Zero <> DivByZero) -> forall s, fst (runPortable p s) = true
+    (symbolicEval p Positive <> DivByZero) ->
+    (symbolicEval p DivByZero <> DivByZero) -> 
+    forall s, fst (runPortable p s) = true.
+    simplify.
+    induct p.
+    - simplify. equality.
+    - simplify. cases n.
+        + simplify. equality.
+        + simplify. equality.
+    - simplify. cases n.
+        + simplify.
+Admitted. *)
 
   Lemma symbolicEval_divbyzero_input : 
   forall p, (symbolicEval p DivByZero <> DivByZero) -> 

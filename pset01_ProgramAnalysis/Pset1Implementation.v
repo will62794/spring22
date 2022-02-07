@@ -548,6 +548,14 @@ Qed.
         
   Admitted. 
   
+
+
+
+
+
+
+
+
     (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
     Lemma symbolicEval_zero_input : 
     forall p, (symbolicEval p Zero <> DivByZero) -> forall s, fst (runPortable p s) = true.
@@ -574,18 +582,6 @@ Qed.
         + simplify. apply symbolicEval_sound_strictpos. equality. *)
   (* Admitted. *)
 
-
-
-
-
-
-
-
-
-
-
-
-  
   Lemma symbolicEval_pos_input : 
     forall p, (symbolicEval p Positive <> DivByZero) -> 
         forall s, fst (runPortable p s) = true.

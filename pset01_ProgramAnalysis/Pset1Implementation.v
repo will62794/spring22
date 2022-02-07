@@ -339,7 +339,7 @@ Module Impl.
   Inductive AbstractState := 
     | Zero              (* {0} *)
     | Positive          (* {1,2,3...} *)
-    | ZeroOrPositive    (* {0,1,2,3...} *)
+    (*| ZeroOrPositive    (* {0,1,2,3...} *)*)
     | DivByZero.        (* special constructor for marking that a program may divide by zero. *)
 
   (* 
@@ -364,8 +364,7 @@ Module Impl.
       | VidThen n p  => 
         match absState with
         | Zero 
-        | ZeroOrPositive  
-        | DivByZero => DivByZero (* state is potentially zero means we hit a divide by zero error. *) 
+        | DivByZero => DivByZero (* state is zero means we hit a divide by zero error. *) 
         | Positive => (symbolicEval p absState) (* dividing by something nonzero doesn't change positivity of abstract state. *)
         end    
       | SetToThen n p => symbolicEval p (if n ==n 0 then Zero else Positive)
@@ -374,13 +373,13 @@ Module Impl.
   Definition validate (p : Prog) : bool := 
     (* Programs always start with some unknown natural number, 
        so the abstract initial state is always zero or positive. *)
-    let res := (symbolicEval p ZeroOrPositive) in
-    match res with
-        | Zero 
-        | ZeroOrPositive 
-        | Positive => true
-        | DivByZero => false
-    end.
+    let zres := (symbolicEval p Zero) in
+    let pres := (symbolicEval p Positive) in
+    match (zres,pres) with
+        | (_, DivByZero) => false
+        | (DivByZero, _) => false
+        | (_, _) => true
+    end. 
   
   (* TODO: Fill in this function definition.. *)
   (* Fixpoint validate' (p : Prog) : bool :=
@@ -434,28 +433,52 @@ Module Impl.
   Our goal is to prove that, if our validate function returns true, then
   'runPortable' will run without a divide by zero error, and its output will be
   equivalent to the output of running the standard 'run' function on the given
-  program. This consists of two main subgoals. That is, we want to prove that
-  if validate returns true, then
+  program. This consists of two main subgoals. We want to prove that
+  if validate returns true, then:
+
     (1) 'runPortable' runs without a divide by zero error.
-    (2) 'runPortable' returns the same result as 'run'
+    (2) 'runPortable' returns the same result as 'run'.
 
   Proving (1) is our main task, since, once that is proved, we can use the
-  previously established lemma 'runPortable_run' ensures that if 'runPortable'
-  returns true, then its output is equivalent to 'run'. To prove (1), we focus
-  on establishing a main lemma, which proves a property of the auxiliary
-  function 'symbolicEval', which we state as 'symbolicEval_sound'. Basically, we
-  need to show that if 'symbolicEval p astate' does NOT return a DivByZero
-  result, then 'runPortable p s' should return true, for any given input s. We
-  can do this by induction on the program 'p'. That is, we essentially need to
-  show that, if the property holds up to the current program 'p', then it
-  will hold after any evaluation step that precedes 'p' i.e.
-    assume holds for 'p',
-    show holds for 
-        - (AddThen n p)
-        - (MulThen n p)
-        - (DivThen n p)
-        - (VidThen n p)
-        - (SetToThen n p)
+  previously established lemma 'runPortable_run' to prove (2), since that lemma
+  establishes that if 'runPortable' returns true, then its output is equivalent
+  to 'run'. 
+  
+  To prove (1), we focus on establishing a key lemma, stated as
+  'symbolicEval_sound', which proves a property of the helper function
+  'symbolicEval'. Basically, we need to show that if 'symbolicEval p astate'
+  does NOT return a DivByZero result, then 'runPortable p s' should return true,
+  for any given input s. Since the 'validate' function uses 'symbolicEval' for
+  its core logic, proving this is mostly sufficient to establish (1).
+  
+  We can prove 'symbolicEval_sound' by induction on the program 'p'. That is, we
+  need to show that, at every step of the program, if 'symbolicEval' hasn't
+  encountered a DivByZero up to the current point, then if in the next step it
+  does not encounter a DivByZero error, runPortable won't either. Our induction
+  cases are on the program 'p'. 
+  
+  Due to the way the inductive data type is
+  defined, our induction actually goes 'backwards' in program execution, rather
+  than forward, which is a bit unintuitive. That is, if we have a program 'p'
+  such that 'symbolicEval p' does not return a DivByZero, then we show that
+  'symbolicEval (<X> p)' also doesn't divide by zero, for any possible program
+  instruction X.
+  
+        - (AddThen n p): 
+        - (MulThen n p):
+        - (SetToThen n p): 
+            If 'p' doesn't encounter a DivByZero for any initial state, then
+            executing an add/multiply/set operation and then executing 'p'
+            still won't encounter an error.
+
+        - (DivThen n p): 
+            We must show that if n==0, symbolicEval will correctly return
+            a DivByZero error, since calling runPortable on this instruction
+            would cause a divide by zero.
+
+        - (VidThen n p): 
+            We must show that if the initial state to runPortable is zero, then
+            symbolicEval will correcly return a DivByZero error.
   *)
 
   (* Now you're ready to write the proof in Coq: *)
@@ -504,48 +527,39 @@ Module Impl.
   simplify. equality.
 Qed.
 
-Definition runOnPos (p:Prog) := 
-    (forall s, ((s <> 0) -> fst (runPortable p s) = true)).
-
-(* If symbolicEval on a positive input does not divide by zero, then
-running runPortable on a positive input mustn't divide by zero. *)
-Lemma symbolicEval_pos_input : 
-forall p,  
-    ((symbolicEval p Positive) <> DivByZero) ->
-    runOnPos p.
-    (* (forall s, ((s <> 0) -> fst (runPortable p s) = true)). *)
-
+  (* If we start out in strictly positive state and symbolic eval
+  doesn't return divide by zero error, then neither will runPortable. *)
+  Lemma symbolicEval_sound_strictpos :
+    forall p, (symbolicEval p Positive <> DivByZero) ->
+        forall s, fst (runPortable p (S s)) = true.
+        simplify.
+        induct p.
+        - simplify. equality.
+        - simplify. cases n. simplify. equality. simplify. equality.
+        - simplify. admit. (*cases n. simplify. admit.*)
+        - simplify. cases n. 
+            + simplify. equality. 
+            + simplify. Search (_ / _). (*rewrite div_str_pos.*) admit.
+        - simplify. cases n.
+            + simplify. admit.
+            + simplify. admit.
+        - simplify. cases n. simplify.
+        
+        
+  Admitted. 
+  
+    (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
+    Lemma symbolicEval_zero_input : 
+    forall p, (symbolicEval p Zero <> DivByZero) -> forall s, fst (runPortable p s) = true.
     simplify.
     induct p.
-    simplify. equality.
-    simplify. 
-    cases n. 
-    simplify. apply IHp. apply H.
-    simplify. equality.
-    simplify. cases n.
-    simplify. equality.
-    simplify. equality.
-    simplify. cases n.
-    simplify. equality.
-    simplify. equality.
-    simplify. equality.
-    simplify. cases n.
-    simplify. equality.
-    simplify. equality.
-Admitted.
+    Admitted.
 
-  (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
-  Lemma symbolicEval_sound : 
-    forall p, (symbolicEval p ZeroOrPositive <> DivByZero) ->
-        forall s, fst (runPortable p s) = true.
-    simplify.
-    induct p.
-    simplify. equality.
-    simplify. 
-    - cases n. 
+    (* - simplify. equality.
+    - simplify. 
+      cases n. 
         + simplify. equality.
-        + simplify. simplify.  
-          apply symbolicEval_pos_input in H. unfold runOnPos.
+        + simplify. apply symbolicEval_sound_strictpos. equality.  
     - cases n.
         + simplify. apply symbolicEval_zero in H. equality.
         + simplify. equality.
@@ -557,8 +571,70 @@ Admitted.
         + simplify. equality.
     - cases n.
         + simplify.  apply symbolicEval_zero in H. equality.
-        + simplify. admit.
+        + simplify. apply symbolicEval_sound_strictpos. equality. *)
+  (* Admitted. *)
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  Lemma symbolicEval_pos_input : 
+    forall p, (symbolicEval p Positive <> DivByZero) -> 
+        forall s, fst (runPortable p s) = true.
   Admitted.
+
+  Lemma symbolicEval_divbyzero_input : 
+  forall p, (symbolicEval p DivByZero <> DivByZero) -> 
+      forall s, fst (runPortable p s) = true.
+  Admitted.
+
+  (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
+  Lemma symbolicEval_sound : 
+    forall p, forall a, (symbolicEval p a <> DivByZero) ->
+        forall s, fst (runPortable p s) = true.
+        simplify.
+        cases a.
+            - apply symbolicEval_zero_input. equality.
+            - apply symbolicEval_pos_input. equality.
+            - apply symbolicEval_divbyzero_input. equality.
+    Qed.
+
+
+
+
+
+
+
+
+
+    (* simplify.
+    induct p.
+    - simplify. equality.
+    - simplify. 
+      cases n. 
+        + simplify. equality.
+        + simplify. apply symbolicEval_sound_strictpos. equality.  
+    - cases n.
+        + simplify. apply symbolicEval_zero in H. equality.
+        + simplify. equality.
+    - cases n.
+        + simplify. equality.
+        + simplify. equality.
+    - cases n.
+        + simplify. equality.
+        + simplify. equality.
+    - cases n.
+        + simplify.  apply symbolicEval_zero in H. equality.
+        + simplify. apply symbolicEval_sound_strictpos. equality.
+  Qed. *)
 
   (* symbolicEval does not return a DivByZero error, iff 'validate'
      returns true. *)

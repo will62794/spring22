@@ -607,9 +607,12 @@ Admitted.
             + destruct IHp. simplify. cases (n ==n 0).
                 * simplify. equality.
                 * cases (n ==n 1). simplify. Search (_ / 1). rewrite e. rewrite Nat.div_1_r. equality. 
-                  equality. equality.
-                    rewrite Nat.div_0_l. equality. equality.
-                admit. (* need to show division of two positives is also positive *)
+                  cases (S s / n).
+                  equality. admit.
+
+                (* equality. equality. *)
+                    (* rewrite Nat.div_0_l. equality. equality. *)
+                (* admit. need to show division of two positives is also positive *)
         - split. destruct IHp.
             + simplify. equality.
             + simplify. destruct IHp. cases n.

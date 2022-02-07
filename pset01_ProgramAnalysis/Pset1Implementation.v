@@ -360,16 +360,17 @@ Module Impl.
       | Done => absState
       | AddThen n p  => symbolicEval p (if n ==n 0 then absState else Positive)
       | MulThen n p  => symbolicEval p (if n ==n 0 then Zero else absState)
-      | DivThen n p  => 
+      | DivThen n p  => (* state / n *)
             if n ==n 0 then DivByZero else
             (* p/1 won't change the abstract state for any value p. *)
             (symbolicEval p (if n ==n 1 then absState else Zero))
-      | VidThen n p  => 
+      | VidThen n p  => (* n / state *)
         match absState with
         | Zero 
         | DivByZero => DivByZero (* state is zero means we hit a divide by zero error. *) 
-        (* in p/q division, if p < q then output is zero. *)
-        (* | Positive => (symbolicEval p (if n ==n 0 then Zero else Positive)) *)
+        (* Be conservative here. Dividing when n < state produces a Zero, but we can't
+           know that detail with this level of abstraction, so we err on the safe side,
+           (i.e. shoot for soundness but not completeness) *)
         | Positive => (symbolicEval p Zero)
         end
         (* absState) dividing by something nonzero doesn't change positivity of abstract state. *)

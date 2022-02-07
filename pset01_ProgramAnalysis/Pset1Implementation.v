@@ -601,29 +601,50 @@ Qed.
       forall s, fst (runPortable p s) = true.
   Admitted.
 
+  (* forall p, (symbolicEval p Positive <> DivByZero) -> *)
+    (* forall s, fst (runPortable p (S s)) = true. *)
+
   (* KEY SOUNDNESS LEMMA. *)
   (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
   Lemma symbolicEval_sound : 
-    forall p, (symbolicEval p ZeroOrPositive <> DivByZero) ->
-        forall s, fst (runPortable p s) = true.
+    forall p, 
+        ((symbolicEval p ZeroOrPositive <> DivByZero) ->
+        forall s, fst (runPortable p s) = true) /\
+        ((symbolicEval p Positive <> DivByZero) ->
+        forall s, fst (runPortable p (S s)) = true) /\
+        ((symbolicEval p Zero <> DivByZero) ->
+            fst (runPortable p 0) = true).
         simplify.
         induct p.
         (* Done *)
-        - simplify. equality.
+        - simplify. split. equality. equality.
         (* AddThen n p *)
-        - simplify. cases n.
-            + simplify. equality.
-            + simplify. admit.
+        - simplify. split.
+            + cases n.
+                * simplify. cases IHp. equality.
+                * simplify. cases IHp. equality.
+            + cases n.
+                * simplify. cases IHp. equality.
+                * simplify. cases IHp. equality.
         (* MulThen n p*)
-        - simplify. cases n.
-            + simplify. admit.
-            + simplify. equality. 
+        - simplify. split.
+            + cases n.
+                * simplify. cases IHp. equality.
+                * simplify. cases IHp. equality.
+            + cases n. 
+                * simplify. equality.
+                * simplify. split. simplify. equality.
+                  simplify. cases IHp. cases H1. rewrite Nat.mul_0_r. equality.
         (* DivThen n p*)
-        - simplify. cases (n ==n 0).
+        - split. simplify. cases (n ==n 0).
             + simplify. equality.
             + cases (n ==n 1).
                 * simplify. equality.
                 * simplify. admit.
+            + split. cases (n ==n 1).
+                * simplify. equality.
+                * simplify. admit.
+            
         (* VidThen n p*)
         - simplify. admit.
             (* + simplify. *)

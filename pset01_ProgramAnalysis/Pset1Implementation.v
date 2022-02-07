@@ -504,6 +504,36 @@ Module Impl.
   simplify. equality.
 Qed.
 
+Definition runOnPos (p:Prog) := 
+    (forall s, ((s <> 0) -> fst (runPortable p s) = true)).
+
+(* If symbolicEval on a positive input does not divide by zero, then
+running runPortable on a positive input mustn't divide by zero. *)
+Lemma symbolicEval_pos_input : 
+forall p,  
+    ((symbolicEval p Positive) <> DivByZero) ->
+    runOnPos p.
+    (* (forall s, ((s <> 0) -> fst (runPortable p s) = true)). *)
+
+    simplify.
+    induct p.
+    simplify. equality.
+    simplify. 
+    cases n. 
+    simplify. apply IHp. apply H.
+    simplify. equality.
+    simplify. cases n.
+    simplify. equality.
+    simplify. equality.
+    simplify. cases n.
+    simplify. equality.
+    simplify. equality.
+    simplify. equality.
+    simplify. cases n.
+    simplify. equality.
+    simplify. equality.
+Admitted.
+
   (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
   Lemma symbolicEval_sound : 
     forall p, (symbolicEval p ZeroOrPositive <> DivByZero) ->
@@ -514,7 +544,8 @@ Qed.
     simplify. 
     - cases n. 
         + simplify. equality.
-        + simplify. simplify. admit.
+        + simplify. simplify.  
+          apply symbolicEval_pos_input in H. unfold runOnPos.
     - cases n.
         + simplify. apply symbolicEval_zero in H. equality.
         + simplify. equality.
@@ -557,11 +588,26 @@ Qed.
     apply symbolicEval_sound. equality.
   Qed.
 
+  (* Lemma runPortable_run : 
+        forall p s0 s1, 
+        runPortable p s0 = (true, s1) -> run p s0 = s1. *)
+        
+  (* Lemma runPortable_run_aux :  
+    forall p s0 s1,   
+    (fst (runPortable p s0) = true) -> (snd (runPortable p s0) = s1).
+    simplify.
+    cases (runPortable p s0).
+  Qed. *)
+
   Lemma validate_sound_result : forall p, validate p = true ->
     forall s, snd (runPortable p s) = (run p s).
     simplify.
+    rewrite tup_eq.
+    apply validate_sound_bool.
     cases (runPortable p s).
     simplify.
+    rewrite tup_eq in Heq.
+    rewrite validate_sound_bool in Heq.
     cases b.
     - symmetry.
       apply runPortable_run. equality.

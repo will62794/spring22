@@ -369,10 +369,9 @@ Module Impl.
         | Zero 
         | ZeroOrPositive
         | DivByZero => DivByZero (* state is zero means we hit a divide by zero error. *) 
-        (* Dividing by exactly 1 doesn't change the abstract program state, but dividing
-        by any other positive natural may produce a zero value, if state < n, so we conservatively
-        update the abstract state to Zero in that case. *)
-        | Positive => (symbolicEval p (if n ==n 1 then absState else Zero))
+        (* dividing by any positive number larger than n could run us to zero, so we err 
+           on the conservative side and simply propagate Zero. *)
+        | Positive => (symbolicEval p Zero)
         end
         (* absState) dividing by something nonzero doesn't change positivity of abstract state. *)
       | SetToThen n p => symbolicEval p (if n ==n 0 then Zero else Positive)
@@ -601,9 +600,6 @@ Qed.
       forall s, fst (runPortable p s) = true.
   Admitted.
 
-  (* forall p, (symbolicEval p Positive <> DivByZero) -> *)
-    (* forall s, fst (runPortable p (S s)) = true. *)
-
   (* KEY SOUNDNESS LEMMA. *)
   (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
   Lemma symbolicEval_sound : 
@@ -611,48 +607,72 @@ Qed.
         ((symbolicEval p ZeroOrPositive <> DivByZero) ->
         forall s, fst (runPortable p s) = true) /\
         ((symbolicEval p Positive <> DivByZero) ->
-        forall s, fst (runPortable p (S s)) = true) /\
+        forall s, s <> 0 -> fst (runPortable p s) = true) /\
         ((symbolicEval p Zero <> DivByZero) ->
-            fst (runPortable p 0) = true).
+        forall s, fst (runPortable p s) = true).
         simplify.
         induct p.
+
         (* Done *)
-        - simplify. split. equality. equality.
+        - simplify. equality.
+        
         (* AddThen n p *)
-        - simplify. split.
-            + cases n.
-                * simplify. cases IHp. equality.
-                * simplify. cases IHp. equality.
-            + cases n.
-                * simplify. cases IHp. equality.
-                * simplify. cases IHp. equality.
-        (* MulThen n p*)
-        - simplify. split.
-            + cases n.
-                * simplify. cases IHp. equality.
-                * simplify. cases IHp. equality.
-            + cases n. 
+        - simplify. split; cases n; simplify.
+            + equality.
+            + cases IHp. cases H1. apply H1. equality. linear_arithmetic.
+            + split.
+              cases IHp. cases H0. apply H0. equality.
+            + split. cases IHp. cases H0. simplify. apply H0. equality. linear_arithmetic.
+              cases IHp. cases H0. simplify. apply H0. simplify. equality. linear_arithmetic.
+        
+        (* MulThen n p *)
+        - simplify. split; cases n; cases IHp; cases H0; simplify.
+            + apply H1. equality.
+            + apply H. equality.
+            + split;simplify.
+              apply H1. equality.
+              apply H1. equality. 
+            + split;simplify.
+              apply H0. equality. linear_arithmetic.
+              apply H1. equality.
+        
+        (* DivThen n p *)
+        - split; simplify; cases IHp; simplify; try split.
+            + cases (n ==n 0).
                 * simplify. equality.
-                * simplify. split. simplify. equality.
-                  simplify. cases IHp. cases H1. rewrite Nat.mul_0_r. equality.
-        (* DivThen n p*)
-        - split. simplify. cases (n ==n 0).
-            + simplify. equality.
-            + cases (n ==n 1).
+                * cases (n ==n 1). simplify. apply H0. equality.
+                  simplify. cases H1. apply H2. equality.
+            + simplify. cases (n ==n 0).
                 * simplify. equality.
-                * simplify. admit.
-            + split. cases (n ==n 1).
-                * simplify. equality.
-                * simplify. admit.
-            
-        (* VidThen n p*)
-        - simplify. admit.
-            (* + simplify. *)
-        (* SetToThen n p*)
-        - simplify. cases n.
-            + simplify. admit.
-            + simplify. admit. 
-    Admitted.
+                * cases (n ==n 1). simplify. cases H0. apply H0. equality.
+                  rewrite e. rewrite Nat.div_1_r. equality. 
+                  cases H0. apply H3. equality.
+            + simplify. cases (n ==n 0). 
+                * equality.
+                * cases (n ==n 1). 
+                  cases H0. apply H2. equality.
+                  cases H0. apply H2. equality.
+        
+        (* VidThen n p *)
+        - split; simplify; cases IHp; try split; simplify.
+            + cases H1. equality.
+            + cases H0. cases (s ==n 0).
+                * equality.
+                * apply H3. equality.
+            + cases H0. equality.
+        
+        (* SetToThen n p *)
+        - split; simplify; cases IHp; try split; simplify.
+            + cases (n ==n 0).
+                * cases H1. apply H2. equality.
+                * cases H1. apply H1. equality. equality.
+            + cases (n ==n 0).
+                * cases H0. apply H3. equality.
+                * cases H0. apply H0. equality. equality.
+            + cases (n ==n 0).
+                * cases H0. apply H2. equality.
+                * cases H0. apply H0. equality. equality.
+    Qed.
 
   (* symbolicEval does not return a DivByZero error, iff 'validate'
      returns true. *)

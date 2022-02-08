@@ -464,16 +464,9 @@ Module Impl.
   
   We can prove 'symbolicEval_sound' by induction on the program 'p'. That is, we
   need to show that, at every step of the program, if 'symbolicEval' hasn't
-  encountered a DivByZero up to the current point, then if in the next step it
-  does not encounter a DivByZero error, runPortable won't either. Our induction
-  cases are on the program 'p'. 
-  
-  Due to the way the inductive data type is
-  defined, our induction actually goes 'backwards' in program execution, rather
-  than forward, which is a bit unintuitive. That is, if we have a program 'p'
-  such that 'symbolicEval p' does not return a DivByZero, then we show that
-  'symbolicEval (<X> p)' also doesn't divide by zero, for any possible program
-  instruction X.
+  encountered a DivByZero up to the current point, then if running an additional
+  program step does not encounter a DivByZero error, runPortable won't either.
+  Our induction is on the program 'p'. 
   
         - (AddThen n p): 
         - (MulThen n p):
@@ -494,7 +487,9 @@ Module Impl.
 
   (* Now you're ready to write the proof in Coq: *)
 
-  (* KEY SOUNDNESS HELPER LEMMA, using a strengthened statement. *)
+  (* 
+    Key soundness helper lemma, using a strengthened lemma statement. 
+  *)
   Lemma symbolicEval_sound_strong : 
     forall p, 
         ((symbolicEval p ZeroOrPositive <> DivByZero) ->
@@ -567,8 +562,11 @@ Module Impl.
                 * cases H0. apply H0. equality. equality.
     Qed.
 
-    (* KEY SOUNDNESS LEMMA. *)
-    (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
+    (* Key soundness lemma. 
+        
+        If symbolicEval does not report a divide by zero, then 'runPortable'
+        doesn't.
+    *)
     Lemma symbolicEval_sound : 
     forall p, 
         ((symbolicEval p ZeroOrPositive <> DivByZero) ->
@@ -576,7 +574,7 @@ Module Impl.
         apply symbolicEval_sound_strong.
     Qed.
 
-  (* symbolicEval does not return a DivByZero error, iff 'validate'
+  (* symbolicEval does not return a DivByZero error iff 'validate'
      returns true. *)
   Lemma symbolicEval_implies_validate : 
     forall p, (symbolicEval p ZeroOrPositive <> DivByZero) <->
@@ -603,22 +601,6 @@ Module Impl.
     simplify. apply symbolicEval_implies_validate in H as HN.
     apply symbolicEval_sound. equality. 
   Qed.
-
-  (* Lemma runPortable_run : forall p s0 s1, *)
-  (*  runPortable p s0 = (true, s1) -> run p s0 = s1. *)
-
-  (* Lemma runPortable_run_tup : 
-        forall p s0 s1, 
-        ((fst (runPortable p s0) = true) -> (snd (runPortable p s0) = s1)) <-> runPortable p s0 = (true, s1).
-        simplify.
-        split.
-        cases (fst (runPortable p s0)).
-            - simplify. rewrite tup_eq. f_equal. equality. equality.
-            - simplify. rewrite tup_eq. f_equal.
-        - rewrite tup_eq. simplify.
-        (* (run p s0) = s1. *)
-        simplify.
-    Qed. *)
 
   Lemma runPortable_run_aux2 :  
   forall p s0 s1,   
@@ -654,7 +636,6 @@ Module Impl.
     simplify. equality.
   Qed.
 
-  (* TODO: This is the remaining lemma that need to be proven. *)
   Lemma validate_sound_snd : 
     forall p, validate p = true ->
         forall s, snd (runPortable p s) = (run p s).

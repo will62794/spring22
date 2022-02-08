@@ -620,44 +620,48 @@ Module Impl.
         simplify.
     Qed. *)
 
-  Lemma runPortable_run_aux :  
-    forall p s0 s1,   
-        (fst (runPortable p s0) = true) -> (snd (runPortable p s0) = s1) <-> (run p s0) = s1.
-    simplify.
-    split.
+  Lemma runPortable_run_aux2 :  
+  forall p s0 s1,   
+      (fst (runPortable p s0) = true) -> (snd (runPortable p s0) = s1 -> (run p s0) = s1).
+  Proof.
+      simplify.
     apply runPortable_run.
-    cases (runPortable p s).
-    rewrite pair_equal_spec. split.
+    simplify.
+    rewrite tup_eq.
+    f_equal.
     equality.
     equality.
   Qed.
 
-  (* Lemma runPortable_run_aux2 :  
-  forall p s,   
-      (fst (runPortable p s) = true) -> (snd (runPortable p s) = (run p s)).
-  simplify.
-  apply runPortable_run_aux in H.
-  split.
-  apply runPortable_run_aux.
-  apply runPortable_run.
-  cases (runPortable p s).
-  rewrite pair_equal_spec. split.
-  equality.
-  equality.
-  Qed. *)
+  Lemma runPortable_run_strong : forall p s0 s1,
+  fst (runPortable p s0) = true -> ((snd (runPortable p s0) = s1) <-> (run p s0) = s1).
+  Proof.  
+    simplify. split.
+    apply runPortable_run_aux2. equality.
+    simplify. induct p.
+    - simplify. equality.
+    - simplify. apply IHp. equality. equality.
+    - simplify. apply IHp. equality. equality.
+    - simplify. cases n. simplify. equality. simplify. apply IHp. simplify. equality. simplify. equality.
+    - simplify. cases s0. simplify. equality. simplify. apply IHp. simplify. equality. equality.
+    - simplify. apply IHp. simplify. equality. equality.
+  Qed.
 
+  Lemma runPortable_run_strong2 : forall p s0,
+  fst (runPortable p s0) = true -> ((snd (runPortable p s0)) = (run p s0)).
+  Proof.  
+    simplify. apply runPortable_run_strong. simplify. equality.
+    simplify. equality.
+  Qed.
 
   (* TODO: This is the remaining lemma that need to be proven. *)
   Lemma validate_sound_snd : 
     forall p, validate p = true ->
         forall s, snd (runPortable p s) = (run p s).
     simplify.
-    apply symbolicEval_implies_validate in H.
-    apply symbolicEval_sound with (s:=s) in H.
-    rewrite runPortable_run_aux in H.
-    (* apply runPortable_run in H0. *)
-    (* simplify. equality. *)
-  Admitted.
+    apply validate_sound_fst with (s:=s) in H.
+    apply runPortable_run_strong2. equality.
+  Qed.
 
   Lemma validate_sound : forall p, validate p = true ->
     forall s, runPortable p s = (true, run p s).

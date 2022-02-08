@@ -494,115 +494,8 @@ Module Impl.
 
   (* Now you're ready to write the proof in Coq: *)
 
-  Lemma symbolicEval_pos : 
-    forall p, (symbolicEval p ZeroOrPositive) <> DivByZero -> 
-                ((symbolicEval p Positive) <> DivByZero).
-    simplify.
-    induct p.
-    simplify. equality.
-    simplify. 
-    cases n. 
-    simplify. apply IHp. apply H.
-    simplify. equality.
-    simplify. cases n.
-    simplify. equality.
-    simplify. equality.
-    simplify. cases n.
-    simplify. equality.
-    simplify. equality.
-    simplify. equality.
-    simplify. cases n.
-    simplify. equality.
-    simplify. equality.
-  Qed.
-
-  Lemma symbolicEval_zero : 
-  forall p, (symbolicEval p Zero) <> DivByZero -> 
-              (symbolicEval p ZeroOrPositive) <> DivByZero.
-  simplify.
-  induct p.
-  simplify. equality.
-  simplify. 
-  cases n. 
-  simplify. apply IHp. apply H.
-  simplify. equality.
-  simplify. cases n.
-  simplify. equality.
-  simplify. equality.
-  simplify. cases n.
-  simplify. equality.
-  simplify. equality.
-  simplify. equality.
-  simplify. cases n.
-  simplify. equality.
-  simplify. equality.
-Qed.
-
-  (* If we start out in strictly positive state and symbolic eval
-  doesn't return divide by zero error, then neither will runPortable. *)
-  Lemma symbolicEval_sound_strictpos :
-    forall p, (symbolicEval p Positive <> DivByZero) ->
-        forall s, fst (runPortable p (S s)) = true.
-        simplify.
-        induct p.
-        - simplify. equality.
-        - simplify. cases n. simplify. equality. simplify. equality.
-        - simplify. admit. (*cases n. simplify. admit.*)
-        - simplify. cases n. 
-            + simplify. equality. 
-            + simplify. Search (_ / _). (*rewrite div_str_pos.*) admit.
-        - simplify. cases n.
-            + simplify. admit.
-            + simplify. admit.
-        - simplify. cases n. simplify.
-        
-        
-  Admitted. 
-  
-    (* Division of two positive natural numbers is positive.  *)
-    Lemma pos_div_is_pos :
-        forall n, forall m, m <= n -> ((S n) / (S m)) > 0.
-        simplify. 
-        apply Nat.div_str_pos_iff. split.
-        linear_arithmetic. linear_arithmetic.
-    Qed.
-
-    Lemma pos_div_is_posb :
-    forall n, forall m, m >= n -> ((S n) / (S m)) > 0.
-    simplify. 
-    apply Nat.div_str_pos. split.
-    linear_arithmetic. linear_arithmetic.
-    Admitted.
-
-  Lemma symbolicEval_pos_input : 
-        forall p, (symbolicEval p Positive <> DivByZero) -> 
-        forall s, fst (runPortable p s) = true.
-        simplify.
-        induct p.
-        - simplify. equality.
-        - simplify. cases n.
-            + simplify. equality.
-            + simplify. equality.
-        - simplify. cases n.
-            + simplify. admit.
-            + simplify. equality.
-        - simplify. cases n.
-            + simplify. equality.
-            + simplify. equality.
-        - simplify.
-            + simplify. equality.
-
-  Admitted.
-
-
-  Lemma symbolicEval_divbyzero_input : 
-  forall p, (symbolicEval p DivByZero <> DivByZero) -> 
-      forall s, fst (runPortable p s) = true.
-  Admitted.
-
-  (* KEY SOUNDNESS LEMMA. *)
-  (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
-  Lemma symbolicEval_sound : 
+  (* KEY SOUNDNESS HELPER LEMMA, using a strengthened statement. *)
+  Lemma symbolicEval_sound_strong : 
     forall p, 
         ((symbolicEval p ZeroOrPositive <> DivByZero) ->
         forall s, fst (runPortable p s) = true) /\
@@ -674,6 +567,15 @@ Qed.
                 * cases H0. apply H0. equality. equality.
     Qed.
 
+    (* KEY SOUNDNESS LEMMA. *)
+    (* If symbolicEval does not report a divide by zero, then 'runPortable' also does not. *)
+    Lemma symbolicEval_sound : 
+    forall p, 
+        ((symbolicEval p ZeroOrPositive <> DivByZero) ->
+        forall s, fst (runPortable p s) = true).
+        apply symbolicEval_sound_strong.
+    Qed.
+
   (* symbolicEval does not return a DivByZero error, iff 'validate'
      returns true. *)
   Lemma symbolicEval_implies_validate : 
@@ -697,9 +599,9 @@ Qed.
 
   (* If validate returns true, then runPortable should return true. *)
   Lemma validate_sound_bool : forall p, validate p = true ->
-    forall s, fst (runPortable p s) = true.
-    simplify. apply symbolicEval_implies_validate in H.
-    apply symbolicEval_sound. equality.
+    (forall s, fst (runPortable p s) = true).
+    simplify. apply symbolicEval_implies_validate in H as HN.
+    apply symbolicEval_sound. equality. 
   Qed.
 
   (* Lemma runPortable_run : 
@@ -715,9 +617,15 @@ Qed.
 
   Lemma validate_sound_result : forall p, validate p = true ->
     forall s, snd (runPortable p s) = (run p s).
-    simplify.
-    rewrite tup_eq.
     apply validate_sound_bool.
+
+    trivial.
+    rewrite tup_eq.
+    apply validate_sound_bool in H.
+    cases (runPortable p s).
+    (* apply validate_sound_bool in H. *)
+    rewrite tup_eq.
+
     cases (runPortable p s).
     simplify.
     rewrite tup_eq in Heq.
@@ -738,14 +646,20 @@ Qed.
   Lemma validate_sound : forall p, validate p = true ->
     forall s, runPortable p s = (true, run p s).
     simplify.
-    cases (runPortable p s).
-    rewrite tup_eq in Heq.
-    rewrite validate_sound_result in Heq.
-    rewrite validate_sound_bool in Heq. 
-    symmetry.
-    equality.
-    equality.
-    equality.
+    (* rewrite tup_eq.  *)
+    apply symbolicEval_implies_validate in H.
+    apply symbolicEval_sound  with (s:=s) in H.
+    apply runPortable_run.
+
+    rewrite pair_equal_spec. 
+    split.
+    apply symbolicEval_implies_validate in H.
+    rewrite symbolicEval_sound. equality. equality.
+    apply symbolicEval_implies_validate in H.
+    apply symbolicEval_sound in H.
+
+    (* simplify. apply symbolicEval_implies_validate in H as HN. *)
+    (* apply symbolicEval_sound. equality.  *)
   Qed.
 
   (* Here is the complete list of commands used in one possible solution:

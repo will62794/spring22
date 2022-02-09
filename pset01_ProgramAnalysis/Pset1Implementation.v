@@ -373,7 +373,6 @@ Module Impl.
            on the conservative side and simply propagate Zero. *)
         | Positive => (symbolicEval p Zero)
         end
-        (* absState) dividing by something nonzero doesn't change positivity of abstract state. *)
       | SetToThen n p => symbolicEval p (if n ==n 0 then Zero else Positive)
     end.
 
@@ -444,8 +443,8 @@ Module Impl.
   Our goal is to prove that, if our validate function returns true, then
   'runPortable' will run without a divide by zero error, and its output will be
   equivalent to the output of running the standard 'run' function on the given
-  program. This consists of two main subgoals. We want to prove that
-  if validate returns true, then:
+  program. This consists of two main subgoals. We want to prove that if validate
+  returns true, then:
 
     (1) 'runPortable' runs without a divide by zero error.
     (2) 'runPortable' returns the same result as 'run'.
@@ -457,39 +456,25 @@ Module Impl.
   
   To prove (1), we focus on establishing a key lemma, stated as
   'symbolicEval_sound', which proves a property of the helper function
-  'symbolicEval'. Basically, we need to show that if 'symbolicEval p astate'
-  does NOT return a DivByZero result, then 'runPortable p s' should return true,
-  for any given input s. Since the 'validate' function uses 'symbolicEval' for
-  its core logic, proving this is mostly sufficient to establish (1).
+  'symbolicEval'. Basically, we need to show that if 'symbolicEval p
+  ZeroOrPositive' does NOT return a DivByZero result, then 'runPortable p s'
+  should return true, for any given input s. Since the 'validate' function uses
+  'symbolicEval' for its core logic, proving this is mostly sufficient to
+  establish (1).
   
   We can prove 'symbolicEval_sound' by induction on the program 'p'. That is, we
-  need to show that, at every step of the program, if 'symbolicEval' hasn't
-  encountered a DivByZero up to the current point, then if running an additional
-  program step does not encounter a DivByZero error, runPortable won't either.
-  Our induction is on the program 'p'. 
-  
-        - (AddThen n p): 
-        - (MulThen n p):
-        - (SetToThen n p): 
-            If 'p' doesn't encounter a DivByZero for any initial state, then
-            executing an add/multiply/set operation and then executing 'p'
-            still won't encounter an error.
-
-        - (DivThen n p): 
-            We must show that if n==0, symbolicEval will correctly return
-            a DivByZero error, since calling runPortable on this instruction
-            would cause a divide by zero.
-
-        - (VidThen n p): 
-            We must show that if the initial state to runPortable is zero, then
-            symbolicEval will correcly return a DivByZero error.
+  need to show that, given a program p, if symbolicEval hasn't encountered a
+  DivByZero up to the current point and runPortable hasn't either, then if
+  'symbolicEval (XThen p) ZeroOrPositive' doesn't return a DivByZero, then
+  neither does 'runPortable (XThen p) s', where XThen represents any possible
+  program instruction. We use an auxiliary lemma statement,
+  'symbolicEval_sound_strong', which strengthens the induction hypothesis in
+  order to prove 'symbolicEval_sound'.
   *)
 
   (* Now you're ready to write the proof in Coq: *)
 
-  (* 
-    Key soundness helper lemma, using a strengthened lemma statement. 
-  *)
+  (* Key soundness helper lemma, using a strengthened lemma statement. *)
   Lemma symbolicEval_sound_strong : 
     forall p, 
         ((symbolicEval p ZeroOrPositive <> DivByZero) ->
@@ -509,8 +494,11 @@ Module Impl.
             + equality.
             + cases IHp. cases H1. apply H1. equality. linear_arithmetic.
             + split.
-              cases IHp. cases H0. apply H0. equality.
-            + split. cases IHp. cases H0. simplify. apply H0. equality. linear_arithmetic.
+              cases IHp. cases H0. apply H0. 
+              equality.
+            + split. cases IHp. 
+              cases H0. simplify. apply H0. equality. 
+              linear_arithmetic.
               cases IHp. cases H0. simplify. apply H0. simplify. equality. linear_arithmetic.
         
         (* MulThen n p *)
@@ -562,11 +550,8 @@ Module Impl.
                 * cases H0. apply H0. equality. equality.
     Qed.
 
-    (* Key soundness lemma. 
-        
-        If symbolicEval does not report a divide by zero, then 'runPortable'
-        doesn't.
-    *)
+    (* Key soundness lemma. If symbolicEval does not report a divide by zero, 
+      then 'runPortable' doesn't. *)
     Lemma symbolicEval_sound : 
     forall p, 
         ((symbolicEval p ZeroOrPositive <> DivByZero) ->
@@ -588,6 +573,8 @@ Module Impl.
     - simplify. equality.
   Qed.
 
+  (* Simple helper lemma that essentially states the basic fact that 
+     P = (fst P, snd P), for a pair P. *)
   Lemma tup_eq : 
     forall s, forall p, (runPortable p s) = (fst (runPortable p s), snd (runPortable p s)).
     simplify.

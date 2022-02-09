@@ -467,9 +467,10 @@ Module Impl.
   DivByZero up to the current point and runPortable hasn't either, then if
   'symbolicEval (XThen p) ZeroOrPositive' doesn't return a DivByZero, then
   neither does 'runPortable (XThen p) s', where XThen represents any possible
-  program instruction. We use an auxiliary lemma statement,
-  'symbolicEval_sound_strong', which strengthens the induction hypothesis in
-  order to prove 'symbolicEval_sound'.
+  program instruction. 
+  
+  We use an auxiliary lemma statement, 'symbolicEval_sound_strong', which
+  strengthens the induction hypothesis in order to prove 'symbolicEval_sound'.
   *)
 
   (* Now you're ready to write the proof in Coq: *)
@@ -477,12 +478,9 @@ Module Impl.
   (* Key soundness helper lemma, using a strengthened lemma statement. *)
   Lemma symbolicEval_sound_strong : 
     forall p, 
-        ((symbolicEval p ZeroOrPositive <> DivByZero) ->
-        forall s, fst (runPortable p s) = true) /\
-        ((symbolicEval p Positive <> DivByZero) ->
-        forall s, s <> 0 -> fst (runPortable p s) = true) /\
-        ((symbolicEval p Zero <> DivByZero) ->
-        forall s, fst (runPortable p s) = true).
+        ((symbolicEval p ZeroOrPositive <> DivByZero) -> forall s, fst (runPortable p s) = true) /\
+        ((symbolicEval p Positive <> DivByZero) -> forall s, s <> 0 -> fst (runPortable p s) = true) /\
+        ((symbolicEval p Zero <> DivByZero) -> forall s, fst (runPortable p s) = true).
         simplify.
         induct p.
 

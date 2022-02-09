@@ -471,6 +471,13 @@ Module Impl.
   
   We use an auxiliary lemma statement, 'symbolicEval_sound_strong', which
   strengthens the induction hypothesis in order to prove 'symbolicEval_sound'.
+  The induction hypothesis for this lemma consists of 3 main facts, for any
+  program p:
+
+  - if symbolicEval p ZeroOrPositive <> DivByZero, then runPortable returns without error.
+  - if symbolicEval p Positive <> DivByZero, then runPortable run with positive input returns without error.
+  - if symbolicEval p Zero <> DivByZero, then runPortable returns without error.
+  
   *)
 
   (* Now you're ready to write the proof in Coq: *)

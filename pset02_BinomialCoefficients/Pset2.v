@@ -118,7 +118,13 @@ Module Impl.
   (* Exercise: Define a simple exponentiation function in the same style, so that
      "exp base n" equals "base^n". *)
 
-  Definition exp(base: N): N -> N. Admitted.
+  Definition exp(base: N): N -> N :=
+    recurse by cases
+    | 0 => 1
+    | n + 1 => base * recurse    
+  end.
+
+  Compute exp 2 4.
 
   (* Once you define "exp", you can replace "Admitted." below by "Proof. equality. Qed." *)
   Lemma test_exp_2_3: exp 2 3 = 8. Admitted.

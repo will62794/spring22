@@ -337,16 +337,11 @@ Module Impl.
         * simplify. linear_arithmetic.
   Qed.
 
-  Local Hint Rewrite N.mul_1_r.
-  Local Hint Rewrite N.mul_1_l.
-  Local Hint Rewrite N.div_1_r.
-  Local Hint Rewrite N.sub_0_r.
-
   Lemma Cn0: forall n, C n 0 = 1.
   Proof.
     induct n; unfold C; simplify.
-    - linear_arithmetic.
-    - rewrite N.div_same. 
+    - rewrite N.mul_1_l. rewrite N.div_1_r. equality.
+    - rewrite N.sub_0_r. rewrite N.mul_1_r. rewrite N.div_same. 
       equality.
       apply fact_nonzero.
   Qed.

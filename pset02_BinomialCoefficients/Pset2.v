@@ -127,11 +127,11 @@ Module Impl.
   Compute exp 2 4.
 
   (* Once you define "exp", you can replace "Admitted." below by "Proof. equality. Qed." *)
-  Lemma test_exp_2_3: exp 2 3 = 8. Admitted.
-  Lemma test_exp_3_2: exp 3 2 = 9. Admitted.
-  Lemma test_exp_4_1: exp 4 1 = 4. Admitted.
-  Lemma test_exp_5_0: exp 5 0 = 1. Admitted.
-  Lemma test_exp_1_3: exp 1 3 = 1. Admitted.
+  Lemma test_exp_2_3: exp 2 3 = 8. Proof. equality. Qed.
+  Lemma test_exp_3_2: exp 3 2 = 9. Proof. equality. Qed.
+  Lemma test_exp_4_1: exp 4 1 = 4. Proof. equality. Qed.
+  Lemma test_exp_5_0: exp 5 0 = 1. Proof. equality. Qed.
+  Lemma test_exp_1_3: exp 1 3 = 1. Proof. equality. Qed.
 
   (* Here's another recursive function defined in the same style to apply a
      function f to a range of values:
@@ -219,7 +219,13 @@ Module Impl.
   (* Exercise: Prove that the i-th element of seq has the value we'd expect. *)
   Lemma seq_spec: forall f count i start, i < count -> ith i (seq f count start) = f (start + i).
   Proof.
-    induct count; simplify.
+    induct count.
+    (* if count is zero then the statement trivially holds. *)
+    - simplify. apply N.nlt_0_r in H. equality.
+    - simplify. unfold_recurse (seq f) count. cases i.
+        * simplify. f_equal. linear_arithmetic.
+        * simplify. Search (_ + _ < _ + _). apply N.add_lt_mono_r in H. rewrite H in IHi.
+        (* TODO: Finish. *)
   Admitted.
 
   (* Exercise: Prove that if the index is out of bounds, "ith" returns 0. *)
@@ -324,15 +330,36 @@ Module Impl.
 
   Lemma fact_nonzero: forall n, n! <> 0.
   Proof.
-  Admitted.
+      induct n; simplify.
+      - equality.
+      - unfold_recurse fact n. cases n.
+        * simplify. linear_arithmetic.
+        * simplify. linear_arithmetic.
+  Qed.
+
+  Local Hint Rewrite N.mul_1_r.
+  Local Hint Rewrite N.mul_1_l.
+  Local Hint Rewrite N.div_1_r.
+  Local Hint Rewrite N.sub_0_r.
 
   Lemma Cn0: forall n, C n 0 = 1.
   Proof.
-  Admitted.
+    induct n; unfold C; simplify.
+    - linear_arithmetic.
+    - rewrite N.div_same. 
+      equality.
+      apply fact_nonzero.
+  Qed.
 
   Lemma Cnn: forall n, C n n = 1.
   Proof.
-  Admitted.
+      induct n; unfold C; simplify.
+      - equality.
+      - rewrite N.sub_diag. simplify.  
+        rewrite N.div_same. 
+        equality.
+        apply fact_nonzero.
+  Qed.
 
 
   (* It's somewhat surprising that in the definition of C(n, k),

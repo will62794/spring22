@@ -493,6 +493,64 @@ Module Impl.
   Lemma bcoeff_correct: forall n k, k <= n -> bcoeff n k = C n k.
   Proof.
     induct k; simplify.
+    
+    (* Base case. *)
+    - unfold C. simplify. 
+      rewrite N.sub_0_r. rewrite N.mul_1_r.
+      rewrite N.div_same. 
+        * equality.
+        * apply fact_nonzero.
+
+    (* Inductive case. *)
+    - unfold C. 
+      rewrite N.sub_add_distr. 
+      unfold_recurse fact k+1.
+
+      replace ((fact n) / ((fact (n - k - 1)) * ((k + 1) * (fact k)))) with 
+              ( ((fact n) * (n-k))  /  
+                ((fact (n - k - 1)) * ((k + 1) * (fact k)) * (n-k)) ).
+      replace ((fact (n - k - 1)) * ((k + 1) * k!) * (n - k)) with 
+               ((fact (n - k - 1)) * (n - k) * (k + 1) * k!).
+      replace ((n - k - 1)! * (n - k)) with ((n - k - 1)! * (n - k + 1 - 1)).
+      replace ((fact (n - k - 1)) * (n - k + 1 - 1)) with (fact (n - k - 1 + 1)).
+      replace (n - k - 1 + 1) with (n-k).
+      replace ( (fact n) * (n - k) / ( (fact (n - k)) * (k + 1) * (fact k)) ) with
+              ( (((fact n) / (((fact (n - k))) * (fact k))) * (n-k)) / (k + 1) ).
+      replace ( (fact n) / ((fact (n - k)) * (fact k)) ) with (C n k).
+      
+      assert (k <= n) by linear_arithmetic.
+      assert (bcoeff n k = C n k) by equality.
+      assert (C n k = bcoeff n k) by equality.
+      rewrite H2.
+      unfold_recurse (bcoeff n) k+1. equality.
+
+      (* Handle the left over goals from the above replacements. *)
+      * unfold C. equality. 
+      * admit.
+      * linear_arithmetic.
+      * admit.
+      * rewrite N.add_comm. rewrite N.add_sub_swap. 
+        simplify. rewrite N.add_0_l. equality. linear_arithmetic. 
+      (* * Search (_ * _ * _ = _ * _ * _).  *)
+      * replace ( (fact (n - k - 1)) * ((k + 1) * (fact k)) * (n - k) ) with
+                ( (fact (n - k - 1)) * (n - k) * ((k + 1) * (fact k)) ) by linear_arithmetic. 
+                linear_arithmetic.
+      * rewrite N.div_mul_cancel_r. equality.
+        assert (n - k >= 1). linear_arithmetic.
+        assert ((fact (n - k - 1)) <> 0). apply fact_nonzero.
+        assert ( ((k + 1) * (fact k)) > 0 ). 
+        assert ((fact k) <> 0). apply fact_nonzero.
+        linear_arithmetic. 
+        apply N.neq_mul_0.
+        linear_arithmetic. linear_arithmetic.
+
+      (* * linear_arithmetic. *)
+                (* N.mul_comm. *)
+      (* rewrite N.sub_diag.  *)
+      (* Search ((_ * _ * _) = (_ * _ * _)). *)
+      (* N.mul_shuffle0 *)
+      (* N.mul_comm *)
+    (* Search (_ - (_ + _)). *)
   Admitted.
 
 

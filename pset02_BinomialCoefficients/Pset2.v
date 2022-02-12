@@ -513,17 +513,24 @@ Module Impl.
         things easier to follow.
       *)
 
+      (* Some useful assertions to use later. *)
+      assert (n - k >= 1). linear_arithmetic.
+      assert ((fact (n - k)) <> 0). apply fact_nonzero.
+      assert ((fact (n - k - 1)) <> 0). apply fact_nonzero.
+      assert ((fact (n - k - 1)) > 0). linear_arithmetic.
+      assert ( ((k + 1) * (fact k)) > 0 ). 
+      assert ((fact k) <> 0). apply fact_nonzero. 
+      linear_arithmetic.
+
       replace ((fact n) / ((fact (n - k - 1)) * ((k + 1) * (fact k)))) with 
               ( ((fact n) * (n-k))  /  
                 ((fact (n - k - 1)) * ((k + 1) * (fact k)) * (n-k)) ).
         2:{
             rewrite N.div_mul_cancel_r. equality.
-            assert (n - k >= 1). linear_arithmetic.
-            assert ((fact (n - k - 1)) <> 0). apply fact_nonzero.
-            assert ( ((k + 1) * (fact k)) > 0 ). 
-            assert ((fact k) <> 0). apply fact_nonzero.
-            linear_arithmetic. 
-            apply N.neq_mul_0. linear_arithmetic. linear_arithmetic.
+            Search (_ * _ <> 0).
+            apply N.neq_mul_0.
+            linear_arithmetic.
+            linear_arithmetic.
         }
       
       replace ((fact (n - k - 1)) * ((k + 1) * k!) * (n - k)) with 
@@ -542,16 +549,41 @@ Module Impl.
       
       replace ((fact (n - k - 1)) * (n - k + 1 - 1)) with (fact (n - k - 1 + 1)).
         2: {
-            admit.
+            unfold_recurse fact (n - k - 1). 
+            rewrite N.mul_comm. f_equal. linear_arithmetic.
         }
       
-      replace (n - k - 1 + 1) with (n-k)by linear_arithmetic.
+      replace (n - k - 1 + 1) with (n-k) by linear_arithmetic.
 
-      (* Search ((_ / _) * _). *)
-      
-      (* TODO: Possibly break this down into smaller steps. *)
+      (* TODO: Finish step. *)
       replace ( (fact n) * (n - k) / ( (fact (n - k)) * (k + 1) * (fact k)) ) with
-              ( (((fact n) / (((fact (n - k))) * (fact k))) * (n-k)) / (k + 1) ). (* check this one. *)
+              ( (((fact n) / (((fact (n - k))) * (k + 1) * (fact k))) * (n-k)) ). (* check this one. *)
+        2:{
+            (* 
+            
+            forall a b c : N, b <> 0 -> (b | a) -> c * a / b = c * (a / b)
+
+            (a * b) / c == (b * a) / c
+                        == (a / c) * b
+            
+            
+            *)
+
+            admit.
+            (* Search (_ * _ / _).
+            replace ((fact n) * (n - k)) with ((n - k) * (fact n)) by apply N.mul_comm.
+            (* rewrite N.mul_comm. *)
+            rewrite N.divide_div_mul_exact.
+            rewrite N.mul_comm. equality.
+            linear_arithmetic. nia.
+            linear_arithmetic.
+            apply fact_nonzero.
+            linear_arithmetic. *)
+        }
+
+    (* TODO: Finish step. *)
+    replace ( (((fact n) / (((fact (n - k))) * (k + 1) * (fact k))) * (n-k)) ) with
+        ( (((fact n) / (((fact (n - k))) * (fact k))) * (n-k) / (k+1)) ). (* check this one. *)
         2:{
             admit.
         }
@@ -562,16 +594,8 @@ Module Impl.
       assert (k <= n) by linear_arithmetic.
       assert (bcoeff n k = C n k) by equality.
       assert (C n k = bcoeff n k) by equality.
-      rewrite H2.
+      rewrite H7.
       unfold_recurse (bcoeff n) k+1. equality.
-
-      (* * linear_arithmetic. *)
-                (* N.mul_comm. *)
-      (* rewrite N.sub_diag.  *)
-      (* Search ((_ * _ * _) = (_ * _ * _)). *)
-      (* N.mul_shuffle0 *)
-      (* N.mul_comm *)
-    (* Search (_ - (_ + _)). *)
   Admitted.
 
 

@@ -350,7 +350,7 @@ Module Impl.
   Proof.
       induct n; unfold C; simplify.
       - equality.
-      - rewrite N.sub_diag. simplify.  
+      - rewrite N.sub_diag. simplify. rewrite N.mul_1_l.
         rewrite N.div_same. 
         equality.
         apply fact_nonzero.

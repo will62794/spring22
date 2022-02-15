@@ -233,6 +233,18 @@ Module Impl.
   Proof.
   Admitted.
 
+  Lemma seq_append : forall f count start,
+  (seq f (count + 1) start) = ((seq f count start) ++ [f (start + count + 1)]).
+  Proof.
+      simplify.
+  Admitted.
+      (* induct k. *)
+      (* simplify. *)
+
+  
+  
+  
+  Compute [2] ++ [3;4] ++ [4;5].
 
   (* Binomial coefficients *)
   (* ********************* *)
@@ -690,12 +702,38 @@ Module Impl.
 
   (* (seq f count start) *)
 
-  Lemma ith_kminone: forall f count i start, 
-    i < count -> ith i (1::(seq f count start)) = ith (i-1) (seq f count start).
+  Lemma ith_kminone: forall k l a, 
+    l <> [] -> k >= 1 -> ith k (a::l) = ith (k-1) l.
     Proof.
         simplify.
+        induct l.
+        - equality.
+        - cases k. simplify.
+        
+        simplify.
+        cases k.
+        - simplify. equality. 
     Admitted.
 
+  Lemma oneplus_len: forall l a,  (len (a::l)) = 1 + len(l).
+    Proof.
+        induct l.
+        - simplify. linear_arithmetic.
+        - simplify. linear_arithmetic.
+    Qed.
+
+  Lemma all_coeffs_fast_len: 
+    forall n, (len (all_coeffs_fast n)) = (n+1).
+    Proof.
+        induct n.
+        - simplify. linear_arithmetic.
+        - unfold_recurse all_coeffs_fast n.
+          unfold nextLine.
+          rewrite IHn.
+          rewrite oneplus_len.
+          rewrite seq_len.
+          linear_arithmetic.
+    Qed.
 
   (* Exercise: Let's prove that all_coeffs_fast is correct.
      Note that you can assume Pascal's rule to prove this. *)
@@ -712,7 +750,59 @@ Module Impl.
        - simplify. rewrite N.le_0_r in H0. rewrite H0. simplify. unfold C. simplify. equality.
        (* n > 0 *)
        - unfold_recurse all_coeffs_fast n.
-         unfold nextLine.
+         (* induct (nextLine (all_coeffs_fast n)). *)
+         (* unfold nextLine. *)
+         cases k. 
+            * simplify. unfold C. simplify. rewrite N.mul_1_r. 
+              rewrite N.add_sub_swap. rewrite N.sub_0_r. 
+              rewrite N.div_same by apply fact_nonzero. equality. linear_arithmetic.
+            * unfold nextLine. unfold_recurse ith k.
+              rewrite all_coeffs_fast_len.
+              Search (_ ++ _).
+              (* TODO: Continue from here. *)
+
+
+
+
+
+              (* pose (k < (n+1)). *)
+              cases P.
+              cases k < (n+1).
+              rewrite seq_spec.
+              rewrite N.add_sub_swap. simplify. rewrite N.add_0_l.
+              split IHk.
+              rewrite seq_spec.
+              simplify.
+
+
+
+         (* unfold_recurse ith k. *)
+         rewrite all_coeffs_fast_len.
+         post (k <=)
+         unfold_recurse ith k.
+
+
+         unfold_recurse (ith k).
+         unfold_recurse ith k.
+         rewrite seq_append.
+         rewrite ith_kminone.
+         Search (?x - ?x).
+         rewrite seq_spec.
+         apply IHn.
+
+
+         rewrite N.add_comm.
+         simplify.
+         unfold_recurse seq.
+         rewrite seq_spec.
+         seq_append
+         
+         (* Lemma seq_spec: 
+         forall f count i start, i < count -> ith i (seq f count start) = f (start + i). *)
+
+
+
+
          assert ((len (all_coeffs_fast n)) = n+1). admit.
          rewrite H1.
          (* unfold_recurse (ith k). *)

@@ -677,6 +677,7 @@ Module Impl.
   Compute nextLine (nextLine [1; 3; 3; 1]).
 
   (* This allows us to define a faster all_coeffs function: *)
+  (* Gives the Nth row of the triangle, where N=0 is the first row. *)
   Definition all_coeffs_fast: N -> list N :=
     recurse by cases
     | 0 => [1]
@@ -684,6 +685,17 @@ Module Impl.
     end.
 
   (* Time Compute all_coeffs_fast 200. takes 0.35s on my computer *)
+  Compute (all_coeffs_fast 3).
+  Compute 1::(5::[2;3]).
+
+  (* (seq f count start) *)
+
+  Lemma ith_kminone: forall f count i start, 
+    i < count -> ith i (1::(seq f count start)) = ith (i-1) (seq f count start).
+    Proof.
+        simplify.
+    Admitted.
+
 
   (* Exercise: Let's prove that all_coeffs_fast is correct.
      Note that you can assume Pascal's rule to prove this. *)
@@ -694,6 +706,29 @@ Module Impl.
       k <= n ->
       ith k (all_coeffs_fast n) = C n k.
   Proof.
+      simplify.
+      cases n.
+       (* n = 0 *)
+       - simplify. rewrite N.le_0_r in H0. rewrite H0. simplify. unfold C. simplify. equality.
+       (* n > 0 *)
+       - unfold_recurse all_coeffs_fast n.
+         unfold nextLine.
+         assert ((len (all_coeffs_fast n)) = n+1). admit.
+         rewrite H1.
+         (* unfold_recurse (ith k). *)
+         cases k.
+            * simplify. unfold C. simplify. rewrite N.sub_0_r. rewrite N.mul_1_r. rewrite N.div_same. equality. apply fact_nonzero.
+            * unfold_recurse ith k.
+              rewrite seq_spec.
+              rewrite N.add_sub_swap.
+              simplify. rewrite N.add_0_l.
+              (* rewrite ith_out_of_bounds_0. *)
+              apply IHk.
+              Search (0 + _).
+        
+         apply seq_spec.
+         (* unfold_recurse (seq (fun k0 : N => ith (k0 - 1) (all_coeffs_fast n) + ith k0 (all_coeffs_fast n))) (n). *)
+         simplify.
   Admitted.
 
   (* ----- THIS IS THE END OF PSET2 ----- All exercises below this line are optional. *)

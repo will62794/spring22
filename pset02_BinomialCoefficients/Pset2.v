@@ -745,80 +745,49 @@ Module Impl.
       ith k (all_coeffs_fast n) = C n k.
   Proof.
       simplify.
-      cases n.
+      induct n.
        (* n = 0 *)
        - simplify. rewrite N.le_0_r in H0. rewrite H0. simplify. unfold C. simplify. equality.
+       
        (* n > 0 *)
-       - unfold_recurse all_coeffs_fast n.
-         (* induct (nextLine (all_coeffs_fast n)). *)
-         (* unfold nextLine. *)
-         cases k. 
+       (* k ranges from 0..(n+1) *)
+       - 
+         unfold_recurse all_coeffs_fast n. 
+         induct k.
             * simplify. unfold C. simplify. rewrite N.mul_1_r. 
               rewrite N.add_sub_swap. rewrite N.sub_0_r. 
               rewrite N.div_same by apply fact_nonzero. equality. linear_arithmetic.
-            * unfold nextLine. unfold_recurse ith k.
-              rewrite all_coeffs_fast_len.
-              Search (_ ++ _).
-              (* TODO: Continue from here. *)
-
-
-
-
-
-              (* pose (k < (n+1)). *)
-              cases P.
-              cases k < (n+1).
-              rewrite seq_spec.
-              rewrite N.add_sub_swap. simplify. rewrite N.add_0_l.
-              split IHk.
-              rewrite seq_spec.
-              simplify.
-
-
-
-         (* unfold_recurse ith k. *)
-         rewrite all_coeffs_fast_len.
-         post (k <=)
-         unfold_recurse ith k.
-
-
-         unfold_recurse (ith k).
-         unfold_recurse ith k.
-         rewrite seq_append.
-         rewrite ith_kminone.
-         Search (?x - ?x).
-         rewrite seq_spec.
-         apply IHn.
-
-
-         rewrite N.add_comm.
-         simplify.
-         unfold_recurse seq.
-         rewrite seq_spec.
-         seq_append
-         
-         (* Lemma seq_spec: 
-         forall f count i start, i < count -> ith i (seq f count start) = f (start + i). *)
-
-
-
-
-         assert ((len (all_coeffs_fast n)) = n+1). admit.
-         rewrite H1.
-         (* unfold_recurse (ith k). *)
-         cases k.
-            * simplify. unfold C. simplify. rewrite N.sub_0_r. rewrite N.mul_1_r. rewrite N.div_same. equality. apply fact_nonzero.
-            * unfold_recurse ith k.
-              rewrite seq_spec.
-              rewrite N.add_sub_swap.
-              simplify. rewrite N.add_0_l.
-              (* rewrite ith_out_of_bounds_0. *)
-              apply IHk.
-              Search (0 + _).
-        
-         apply seq_spec.
-         (* unfold_recurse (seq (fun k0 : N => ith (k0 - 1) (all_coeffs_fast n) + ith k0 (all_coeffs_fast n))) (n). *)
-         simplify.
+            * cases ((k + 1) =? (n + 1)).
+                ** unfold nextLine.
+                   rewrite N.eqb_eq in Heq.
+                   replace k with n by linear_arithmetic.
+                   unfold_recurse ith n.
+                   rewrite all_coeffs_fast_len.
+                   rewrite seq_spec by linear_arithmetic.
+                   rewrite N.add_sub_swap by linear_arithmetic. simplify.
+                   rewrite N.add_0_l.
+                   replace (ith (1 + n) (all_coeffs_fast n)) with 0. 
+                   2:{
+                       rewrite ith_out_of_bounds_0.
+                       equality.
+                       rewrite all_coeffs_fast_len. linear_arithmetic.
+                   } 
+                   rewrite N.add_0_r. 
+                   admit.
+                ** rewrite N.eqb_neq in Heq.
+                   assert (k+1 < n+1). linear_arithmetic.
+                   assert (k<n). linear_arithmetic.
+                   unfold nextLine.
+                   unfold_recurse ith k.
+                   rewrite seq_spec.
+                   2:{
+                       rewrite all_coeffs_fast_len.
+                       linear_arithmetic.
+                   }
+                   rewrite N.add_sub_swap by linear_arithmetic.
+                   simplify.
+                   rewrite N.add_0_l.
+                   admit.
   Admitted.
 
   (* ----- THIS IS THE END OF PSET2 ----- All exercises below this line are optional. *)

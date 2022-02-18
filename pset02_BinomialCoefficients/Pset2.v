@@ -234,19 +234,19 @@ Module Impl.
   (* Exercise: Prove that if the index is out of bounds, "ith" returns 0. *)
   Lemma ith_out_of_bounds_0: forall i l, len l <= i -> ith i l = 0.
   Proof.
-  Admitted.
+      induct i.
+      - simplify. cases l.
+        * simplify. linear_arithmetic.
+        * simplify. linear_arithmetic.
+      - simplify. cases l. 
+        * simplify. unfold_recurse ith i. linear_arithmetic.
+        * simplify.
+          unfold_recurse ith i.
+          assert (len l <= i) by linear_arithmetic.
+          apply IHi in H0.
+          equality.
+  Qed.
 
-  Lemma seq_append : forall f count start,
-  (seq f (count + 1) start) = ((seq f count start) ++ [f (start + count + 1)]).
-  Proof.
-      simplify.
-  Admitted.
-      (* induct k. *)
-      (* simplify. *)
-
-  
-  
-  
   Compute [2] ++ [3;4] ++ [4;5].
 
   (* Binomial coefficients *)

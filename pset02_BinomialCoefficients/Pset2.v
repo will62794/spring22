@@ -518,8 +518,6 @@ Module Impl.
 
     (* Inductive case. *)
     - unfold C. 
-      rewrite N.sub_add_distr. 
-      unfold_recurse fact k+1.
 
       (* 
         Sequence of algebraic manipulations.
@@ -534,84 +532,177 @@ Module Impl.
       assert ((fact (n - k - 1)) <> 0). apply fact_nonzero.
       assert ((fact (n - k - 1)) > 0). linear_arithmetic.
       assert ( ((k + 1) * (fact k)) > 0 ). 
-      assert ((fact k) <> 0). apply fact_nonzero. 
-      linear_arithmetic.
+      assert ((fact k) <> 0). apply fact_nonzero. linear_arithmetic.
+      assert ((k+1) > 0). linear_arithmetic.
+      assert (k! <> 0). apply fact_nonzero.
+      assert (((n - k)! * (k + 1) * k!) <> 0). linear_arithmetic.
 
-      replace ((fact n) / ((fact (n - k - 1)) * ((k + 1) * (fact k)))) with 
-              ( ((fact n) * (n-k))  /  
-                ((fact (n - k - 1)) * ((k + 1) * (fact k)) * (n-k)) ).
+      (* Initial form:
+                    n!
+        = -----------------------
+            (n - (k + 1))! (k + 1)!
+      *)
+
+      (* 
+                    n!
+        = -----------------------
+            (n - k - 1)! (k + 1)!
+      *)
+      rewrite N.sub_add_distr. 
+
+      (* 
+                    n!
+        = -----------------------
+            (n - k - 1)! k! (k + 1)
+      *)
+      replace ((fact n) / 
+                ((fact (n - k - 1)) * ((fact (k+1))))) with 
+              ( ((fact n))  /  
+                ((fact (n - k - 1)) * ((fact k) * (k + 1)) )).
         2:{
+            Search (_ - (_ + _)).
+            (* rewrite N.sub_add_distr. *)
+            unfold_recurse fact k.
+            replace ((k + 1) * k!) with (k! * (k + 1)) by linear_arithmetic.
+            equality.
+            (* rewrite N.mul_comm.
+            equality.
             rewrite N.div_mul_cancel_r. equality.
             Search (_ * _ <> 0).
             apply N.neq_mul_0.
             linear_arithmetic.
-            linear_arithmetic.
-        }
-      
-      replace ((fact (n - k - 1)) * ((k + 1) * k!) * (n - k)) with 
-               ((fact (n - k - 1)) * (n - k) * (k + 1) * k!).
-        2:{
-            replace ( (fact (n - k - 1)) * ((k + 1) * (fact k)) * (n - k) ) with
-            ( (fact (n - k - 1)) * (n - k) * ((k + 1) * (fact k)) ) by linear_arithmetic. 
-            linear_arithmetic.
-        }
-      
-      replace ((n - k - 1)! * (n - k)) with ((n - k - 1)! * (n - k + 1 - 1)).
-        2: {
-            rewrite N.add_comm. rewrite N.add_sub_swap. 
-            simplify. rewrite N.add_0_l. equality. linear_arithmetic. 
-        }
-      
-      replace ((fact (n - k - 1)) * (n - k + 1 - 1)) with (fact (n - k - 1 + 1)).
-        2: {
-            unfold_recurse fact (n - k - 1). 
-            rewrite N.mul_comm. f_equal. linear_arithmetic.
-        }
-      
-      replace (n - k - 1 + 1) with (n-k) by linear_arithmetic.
-
-      (* TODO: Finish step. *)
-      replace ( (fact n) * (n - k) / ( (fact (n - k)) * (k + 1) * (fact k)) ) with
-              ( (((fact n) / (((fact (n - k))) * (k + 1) * (fact k))) * (n-k)) ). (* check this one. *)
-        2:{
-            (* 
-            
-            forall a b c : N, b <> 0 -> (b | a) -> c * a / b = c * (a / b)
-
-            (a * b) / c == (b * a) / c
-                        == (a / c) * b
-            
-            
-            *)
-
-            admit.
-            (* Search (_ * _ / _).
-            replace ((fact n) * (n - k)) with ((n - k) * (fact n)) by apply N.mul_comm.
-            (* rewrite N.mul_comm. *)
-            rewrite N.divide_div_mul_exact.
-            rewrite N.mul_comm. equality.
-            linear_arithmetic. nia.
-            linear_arithmetic.
-            apply fact_nonzero.
             linear_arithmetic. *)
         }
 
-    (* TODO: Finish step. *)
-    replace ( (((fact n) / (((fact (n - k))) * (k + 1) * (fact k))) * (n-k)) ) with
-        ( (((fact n) / (((fact (n - k))) * (fact k))) * (n-k) / (k+1)) ). (* check this one. *)
+        (* 
+                n! (n - k)
+        = -------------------------------
+            (n - k - 1)! (n - k) k! (k + 1)
+        *)
+      replace  
+      ( ((fact n))  /  
+        ((fact (n - k - 1)) * ((fact k) * (k + 1)) )) with
+        ( ((fact n) * (n-k))  /  
+        ((fact (n - k - 1)) * (n-k) * ((fact k) * (k + 1)) )).
         2:{
-            admit.
+            rewrite N.mul_shuffle0.
+            rewrite N.div_mul_cancel_r.
+            equality.
+            linear_arithmetic.
+            linear_arithmetic.
         }
-      
-      replace ( (fact n) / ((fact (n - k)) * (fact k)) ) with (C n k).
-        2: { unfold C. equality. } 
-      
-      assert (k <= n) by linear_arithmetic.
-      assert (bcoeff n k = C n k) by equality.
-      assert (C n k = bcoeff n k) by equality.
-      rewrite H7.
-      unfold_recurse (bcoeff n) k+1. equality.
-  Admitted.
+
+        (* 
+                        n! (n - k)
+        = ---------------------------------------
+            (n - k - 1)! (n - k - 1 + 1) k! (k + 1)
+        *)
+      replace
+        ( ((fact n) * (n-k))  /  
+        ((fact (n - k - 1)) * (n-k) * ((fact k) * (k + 1)) )) with
+        ( ((fact n) * (n-k))  /  
+        ((fact (n - k - 1)) * (n - k - 1 + 1) * ((fact k) * (k + 1)) )).
+        2:{
+            replace (n-k-1+1) with (n-k).
+            equality.
+            linear_arithmetic.
+        }
+
+        (* 
+                    n! (n - k)
+        = ---------------------------
+            (n - k - 1 + 1)! k! (k + 1)
+        *)
+        replace 
+            ( ((fact n) * (n-k))  /  
+            ((fact (n - k - 1)) * (n - k - 1 + 1) * ((fact k) * (k + 1)) )) with
+            ( ((fact n) * (n-k))  /  
+            ((fact (n - k - 1 + 1)) * ((fact k) * (k + 1)) )).
+            2:{
+                replace ((fact (n - k - 1)) * (n - k - 1 + 1)) with
+                        (fact (n - k - 1 + 1)).
+                equality.
+                (* Show that the argument to 'fact' is nonzero so unfold_recurse can be applied. *)
+                assert ((n-k-1+1)>0) by linear_arithmetic.
+                unfold_recurse fact (n-k-1).
+                linear_arithmetic.
+            }
+
+        (* 
+                n! (n - k)
+        = -------------------
+            (n - k)! k! (k + 1)
+        *)
+        replace 
+            ( ((fact n) * (n-k))  /  
+            ((fact (n - k - 1 + 1)) * ((fact k) * (k + 1)) )) with
+            ( ((fact n) * (n-k))  /  
+            ((fact (n - k)) * ((fact k) * (k + 1)) )).
+            2:{
+            replace (n-k-1+1) with (n-k).
+            equality.
+            linear_arithmetic.
+            }
+
+        (* 
+            n! (n - k)
+        = ----------- / (k + 1)
+            (n - k)! k!        
+        *)
+        replace 
+            ( ((fact n) * (n-k))  /  
+            ((fact (n - k)) * ((fact k) * (k + 1)) )) with
+            ( (((fact n) * (n-k))  /  
+               ((fact (n - k)) * (fact k))) / 
+                (k + 1) ).
+            2:{
+                rewrite N.div_div.
+                replace ((n - k)! * (k! * (k + 1))) with
+                        ((n - k)! * k! * (k + 1)) by linear_arithmetic.
+                equality.
+                linear_arithmetic.
+                linear_arithmetic.
+            }
+        
+        (* 
+                n!
+        = ----------- * (n - k) / (k + 1)
+            (n - k)! k!
+        *)
+        replace 
+            ( (((fact n) * (n-k))  /  
+            ((fact (n - k)) * (fact k))) ) with
+            ( (n-k) * (((fact n))  /  
+            ((fact (n - k)) * (fact k))) ).
+             Search ((_ * _ / _)).
+             2:{
+                 replace (n! * (n - k)) with ((n - k) * n!) by linear_arithmetic.
+                 symmetry.
+                 apply N.divide_div_mul_exact.
+                 linear_arithmetic.
+                 apply C_is_integer. linear_arithmetic.
+             }
+
+        replace ( (n - k) * (n! / ((n - k)! * k!)) ) with
+                ( (n! / ((n - k)! * k!)) * (n - k) ) by linear_arithmetic.
+
+      (* 
+        = C(n, k) * (n - k) / (k + 1)
+      *)
+      replace
+        ( (fact n)  /  
+          ((fact (n - k)) * (fact k)) ) with (C n k).
+          2:{ unfold C. equality. }
+        
+      (* 
+        = bcoeff(n, k) * (n - k) / (k + 1)
+      *)
+      replace (C n k) with (bcoeff n k) by linear_arithmetic.
+
+      unfold_recurse (bcoeff n) k.
+      Search (_ * _ / _).
+      linear_arithmetic.
+  Qed.
 
 
   (* All binomial coefficients for a given n *)

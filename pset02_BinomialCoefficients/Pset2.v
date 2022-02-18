@@ -219,57 +219,17 @@ Module Impl.
   (* Exercise: Prove that the i-th element of seq has the value we'd expect. *)
   Lemma seq_spec: forall f count i start, i < count -> ith i (seq f count start) = f (start + i).
   Proof.
-    simplify.
     induct count.
-    (* if count is zero then the statement trivially holds. *)
     - simplify. apply N.nlt_0_r in H. equality.
-    - simplify.
-        cases i.
-        * unfold_recurse (seq f) count. simplify. f_equal. linear_arithmetic.
-        * unfold_recurse (seq f) count.
-          replace (ith (i + 1) (f start :: seq f count (start + 1)) = f (start + (i + 1))) with
-                  (ith (i) (seq f count (start + 1)) = f (start + (i + 1))).
-                2:{
-                    unfold_recurse ith i.
-                    equality.
-                }
-                assert (i<count).
-                linear_arithmetic.
-                
-
-                unfold_recurse ith (i + 1 + 0).    
-
-                2:{
-
-                }
-          unfold_recurse ith i.
-        
-        apply N.eqb_eq in Heq.
-          rewrite Heq.
-          unfold_recurse (seq f) count.
-          unfold_recurse ith count.
-          cases i.
-           ** replace (0=count) with (count=0) in Heq. 
-              rewrite Heq. simplify. f_equal. linear_arithmetic. admit.
-           ** unfold_recurse ith count.
-          
-          
-        2:{
-            apply N.eqb_neq in Heq. 
-            unfold_recurse (seq f) count.
-            apply N.eqb_neq in Heq. 
-            assert (i < count).
-            linear_arithmetic.
-            rewrite IHcount.
-
-        }
-
-        unfold_recurse (seq f) count.
-        * apply N.eqb_eq in Heq. rewrite Heq.
+    - simplify. unfold_recurse (seq f) count.
+        cases i. 
         * simplify. f_equal. linear_arithmetic.
-        * simplify. Search (_ + _ < _ + _). apply N.add_lt_mono_r in H. rewrite H in IHi.
-        (* TODO: Finish. *)
-  Admitted.
+        * unfold_recurse ith (i).
+          assert (i < count) by linear_arithmetic.
+          eapply IHcount in H0.
+          replace (start + (i+1)) with ((start + 1)+i) by linear_arithmetic.
+          apply H0.
+  Qed.
 
   (* Exercise: Prove that if the index is out of bounds, "ith" returns 0. *)
   Lemma ith_out_of_bounds_0: forall i l, len l <= i -> ith i l = 0.

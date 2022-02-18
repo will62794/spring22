@@ -794,21 +794,6 @@ Module Impl.
   Compute (all_coeffs_fast 3).
   Compute 1::(5::[2;3]).
 
-  (* (seq f count start) *)
-
-  Lemma ith_kminone: forall k l a, 
-    l <> [] -> k >= 1 -> ith k (a::l) = ith (k-1) l.
-    Proof.
-        simplify.
-        induct l.
-        - equality.
-        - cases k. simplify.
-        
-        simplify.
-        cases k.
-        - simplify. equality. 
-    Admitted.
-
   Lemma oneplus_len: forall l a,  (len (a::l)) = 1 + len(l).
     Proof.
         induct l.
@@ -829,6 +814,19 @@ Module Impl.
           linear_arithmetic.
     Qed.
 
+    (* C(n,n) = 1 *)
+    Lemma Cnn_is_one :
+    forall n, (C n n) = 1.
+    Proof.
+        induct n.
+        - unfold C. simplify. rewrite N.mul_1_l. rewrite N.div_1_r. equality.
+        - unfold C. 
+          rewrite N.sub_add_distr. rewrite N.add_sub_swap.
+          rewrite N.sub_diag. simplify. rewrite N.mul_1_l.
+          rewrite N.div_same; try apply fact_nonzero. try linear_arithmetic.
+          linear_arithmetic.
+    Qed.
+
   (* Exercise: Let's prove that all_coeffs_fast is correct.
      Note that you can assume Pascal's rule to prove this. *)
   (* HINT 1 (see Pset2Sig.v) *)
@@ -838,15 +836,13 @@ Module Impl.
       k <= n ->
       ith k (all_coeffs_fast n) = C n k.
   Proof.
-      simplify.
       induct n.
        (* n = 0 *)
        - simplify. rewrite N.le_0_r in H0. rewrite H0. simplify. unfold C. simplify. equality.
        
        (* n > 0 *)
        (* k ranges from 0..(n+1) *)
-       - 
-         unfold_recurse all_coeffs_fast n. 
+       - unfold_recurse all_coeffs_fast n. 
          induct k.
             * simplify. unfold C. simplify. rewrite N.mul_1_r. 
               rewrite N.add_sub_swap. rewrite N.sub_0_r. 
@@ -860,29 +856,42 @@ Module Impl.
                    rewrite seq_spec by linear_arithmetic.
                    rewrite N.add_sub_swap by linear_arithmetic. simplify.
                    rewrite N.add_0_l.
-                   replace (ith (1 + n) (all_coeffs_fast n)) with 0. 
-                   2:{
-                       rewrite ith_out_of_bounds_0.
-                       equality.
-                       rewrite all_coeffs_fast_len. linear_arithmetic.
-                   } 
-                   rewrite N.add_0_r. 
-                   admit.
+                   rewrite IHn.
+                   assert (k = n) by linear_arithmetic.
+                   assert (k <= n) by linear_arithmetic.
+                   assert (k <= n+1) by linear_arithmetic.
+                   rewrite ith_out_of_bounds_0.
+                   rewrite N.add_0_r.
+                   repeat rewrite Cnn_is_one. equality.
+                   rewrite all_coeffs_fast_len. linear_arithmetic.
+                   linear_arithmetic.
                 ** rewrite N.eqb_neq in Heq.
-                   assert (k+1 < n+1). linear_arithmetic.
-                   assert (k<n). linear_arithmetic.
+                   simplify.
+                   assert (k<=n) by linear_arithmetic.
+                   assert (k<=n+1) by linear_arithmetic.
+                   assert (k<n+1) by linear_arithmetic.
                    unfold nextLine.
                    unfold_recurse ith k.
-                   rewrite seq_spec.
-                   2:{
-                       rewrite all_coeffs_fast_len.
-                       linear_arithmetic.
-                   }
-                   rewrite N.add_sub_swap by linear_arithmetic.
-                   simplify.
-                   rewrite N.add_0_l.
-                   admit.
-  Admitted.
+                   rewrite all_coeffs_fast_len.
+                   rewrite seq_spec by linear_arithmetic.
+                   replace (1 + k - 1) with k by linear_arithmetic.
+                   rewrite IHn by linear_arithmetic.
+                   rewrite IHn by linear_arithmetic.
+                   replace (1+k) with (k+1) by linear_arithmetic.
+                   symmetry.
+
+                   (* 
+                   Definition Pascal's_rule: Prop := forall n k,
+                   1 <= k <= n ->
+                   C (n+1) k = C n (k - 1) + C n k. 
+                   *)
+
+                   replace (C n k) with (C n (k + 1 - 1)).
+                   2:{ f_equal. linear_arithmetic. }
+                   unfold Pascal's_rule in H.
+                   apply H. 
+                   linear_arithmetic.
+  Qed.
 
   (* ----- THIS IS THE END OF PSET2 ----- All exercises below this line are optional. *)
 
